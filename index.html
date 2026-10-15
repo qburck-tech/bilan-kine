@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bilan kiné</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bilan kiné">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F3F6F5">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+/* Layout: one-column clinical form for iPhone — sticky section nav on top, action bar at the bottom */
+:root{
+  --bg:#F3F6F5; --surface:#FFFFFF; --ink:#18272B; --muted:#5D6F72; --line:#D5DFDC;
+  --accent:#2C6E5F; --accent-ink:#FFFFFF; --accent-soft:#E1EFEB; --warn:#B4442C; --warn-soft:#F8E6E1;
+  --f-body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  --f-head:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#101716; --surface:#18211F; --ink:#E2EBE8; --muted:#93A6A2; --line:#2B3936;
+  --accent:#6CC0AB; --accent-ink:#0D1715; --accent-soft:#1F3631; --warn:#EE8A72; --warn-soft:#3A221C; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.4;padding-top:env(safe-area-inset-top,0px)}
+.wrap{max-width:640px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 130px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:10px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px))}
+.top h1{font-family:var(--f-head);font-weight:700;font-size:19px;margin:0;letter-spacing:-.01em}
+.top .sub{font-size:11.5px;color:var(--muted);margin:1px 0 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+nav.jump{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;scrollbar-width:none}
+nav.jump::-webkit-scrollbar{display:none}
+nav.jump a{flex:none;font-weight:600;font-size:14px;text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 11px;display:flex;gap:6px;align-items:center}
+nav.jump a .n{font-size:11.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+section.sec{margin-top:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;scroll-margin-top:100px}
+section.sec>h2{font-family:var(--f-head);font-weight:700;font-size:18px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+section.sec>h2 .n{font-weight:400;font-size:12.5px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;padding:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0;grid-column:1 / -1}
+.field.half{grid-column:auto}
+.field>label,.field>.lbl{font-size:13px;font-weight:700;color:var(--muted)}
+input[type=text],input[type=date],input[type=search],textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;min-height:42px}
+input[type=date]{-webkit-appearance:none;appearance:none}
+textarea{resize:none;overflow:hidden;line-height:1.35}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.unitbox{display:flex;align-items:center;gap:6px}
+.unitbox .u{font-size:14px;color:var(--muted)}
+output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font:inherit;font-size:14.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:7px 12px;min-height:36px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chips.red .chip[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.eva{display:grid;grid-template-columns:repeat(11,1fr);gap:3px}
+.eva .chip{padding:7px 0;border-radius:7px;font-variant-numeric:tabular-nums;min-width:0}
+.eva-ends{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+.tbl{overflow-x:auto}
+.tbl table{width:100%;border-collapse:collapse;min-width:300px}
+.tbl th{font-size:12px;font-weight:700;color:var(--muted);text-align:left;padding:0 4px 5px}
+.tbl td{padding:2px}
+.tbl td input{min-height:38px;padding:7px 8px;font-size:16px}
+.tbl td.x{width:34px}
+.iconbtn{font:inherit;width:32px;height:32px;flex:none;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;font-size:18px;line-height:1}
+.addrow{font:inherit;font-size:14px;margin-top:6px;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:8px;padding:7px 12px;cursor:pointer}
+.hint{font-size:12.5px;color:var(--muted);margin:0}
+.artrow{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:7px;background:var(--bg)}
+.artrow+.artrow{margin-top:10px}
+.artrow .head{display:flex;gap:6px;align-items:center}
+.artrow .head input{flex:1;min-width:0;background:var(--surface)}
+.artrow .head .chips{flex-wrap:nowrap;gap:4px}
+.artrow .sub{font-size:12px;font-weight:700;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:3px}
+.artrow .deg input{width:84px;min-height:34px;padding:5px 8px;background:var(--surface);text-align:right}
+.artrow .chip{background:var(--surface);font-size:13.5px;padding:6px 10px;min-height:34px}
+.artrow .chip[aria-pressed="true"],.tcard .chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.seg .chip{padding:6px 1px;font-size:12.5px;border-radius:7px}
+.scale{font-size:11.5px;color:var(--muted);margin:8px 0 0}
+.tchips{display:flex;flex-wrap:wrap;gap:7px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}
+.dot.pos{background:var(--warn)}.dot.neg{background:var(--accent)}.dot.dbt{background:var(--muted)}
+.tcard{flex-basis:100%;border:1px solid var(--accent);border-radius:10px;padding:10px 12px;background:var(--accent-soft);display:flex;flex-direction:column;gap:8px}
+.tcard p{margin:0;font-size:14px;line-height:1.4}
+.tcard .row2{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tcard .chip{background:var(--surface);padding:6px 12px;min-height:34px;font-size:14px}
+.tcard .chip.pos[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
+.tcard .gap{width:8px}
+.tcard input{background:var(--surface)}
+.regions{margin-bottom:10px}
+.regions .chip{font-size:13.5px;padding:6px 11px;min-height:34px}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding:8px max(12px,env(safe-area-inset-right,0px)) calc(8px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:640px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr 1.2fr 1.3fr;gap:6px}
+.btn{font:inherit;font-weight:600;font-size:15px;border-radius:10px;padding:11px 8px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);white-space:nowrap}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.danger{background:var(--warn);border-color:var(--warn);color:#fff}
+.btn.small{font-size:13.5px;padding:7px 10px;border-radius:8px}
+.overlay{position:fixed;inset:0;z-index:10;background:rgba(10,20,18,.45);display:flex;align-items:flex-end;justify-content:center}
+.overlay .card{width:100%;max-width:640px;max-height:92vh;overflow-y:auto;background:var(--surface);border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.overlay.full .card{height:100%;max-height:none;border-radius:0;padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.overlay h3{font-family:var(--f-head);font-weight:700;font-size:20px;margin:0}
+.overlay .row{display:flex;gap:10px}
+.overlay .row .btn{flex:1}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.check input{width:22px;height:22px;margin:0;flex:none;accent-color:var(--accent)}
+.msg{font-size:14px;padding:10px 12px;border-radius:8px;background:var(--accent-soft)}
+.msg.err{background:var(--warn-soft);color:var(--warn)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--ink);color:var(--bg);font-size:14px;padding:10px 14px;border-radius:10px;max-width:calc(100% - 32px);box-shadow:0 4px 18px rgba(0,0,0,.18)}
+.histhead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.group{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.group+.group{margin-top:10px}
+.group .gh{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;background:var(--bg)}
+.group .gh b{font-size:16px}
+.entry{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.entry .when{font-size:14.5px;font-variant-numeric:tabular-nums}
+.entry .when small{color:var(--muted);display:block;font-size:12px}
+.entry .acts{display:flex;gap:6px}
+.empty{color:var(--muted);font-size:14.5px;padding:18px 4px;text-align:center}
+.cmp{width:100%;border-collapse:collapse;font-size:14px}
+.cmp th{text-align:left;font-size:12px;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--line)}
+.cmp td{padding:7px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp td.sec{font-weight:700;color:var(--accent);padding-top:12px;border-bottom:none}
+.trend{font-weight:700;white-space:nowrap}
+.trend.up{color:var(--accent)}.trend.down{color:var(--warn)}.trend.eq{color:var(--muted)}
+#print{display:none}
+@media (max-width:380px){.grid{grid-template-columns:1fr}.field.half{grid-column:1 / -1}.btn{font-size:14px}}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+
+/* ---------- Impression ---------- */
+@page{size:A4;margin:11mm}
+.rp{font-family:Helvetica,Arial,sans-serif;color:#111;line-height:1.3;width:188mm}
+.rp-head{display:flex;justify-content:space-between;gap:10mm;align-items:flex-start}
+.rp-cab{font-size:.92em;color:#444;white-space:pre-line}
+.rp-cab b{color:#111}
+.rp-title{text-align:right}
+.rp-title b{display:block;font-size:1.45em}
+.rp-title span{color:#444}
+.rp-pat{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:1.12em;border-bottom:1.2pt solid #111;padding:2.5mm 0 1.2mm;margin:2mm 0 1mm}
+.rp-pat span{font-weight:400;font-size:.8em;color:#444}
+.rp h4{font-size:1.08em;letter-spacing:.04em;text-transform:uppercase;color:#2C6E5F;margin:2.6mm 0 1mm;padding-bottom:.6mm;border-bottom:.5pt solid #bbb;break-after:avoid;page-break-after:avoid}
+.rp p{margin:0 0 1mm;white-space:pre-wrap}
+.rp .sep{color:#888;padding:0 1.2mm}
+.rp .redf{color:#B4442C;font-weight:700}
+.rp .tl{font-weight:700;margin:1mm 0 .6mm;break-after:avoid;page-break-after:avoid}
+.rp table{width:100%;border-collapse:collapse;margin:0 0 1.4mm;font-size:.95em}
+.rp th,.rp td{border:.5pt solid #bbb;padding:.6mm 1.2mm;text-align:left;vertical-align:top}
+.rp th{background:#EAF1EF;color:#333}
+.rp tr{break-inside:avoid;page-break-inside:avoid}
+.rp .up{color:#2C6E5F;font-weight:700}.rp .down{color:#B4442C;font-weight:700}
+@media print{
+  html,body{background:#fff!important;color:#111!important;padding:0!important}
+  .wrap,.bar,.overlay,.toast{display:none!important}
+  #print{display:block!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Bilan diagnostic kiné</h1>
+    <p class="sub" id="topsub">Données sur cet iPhone uniquement · nom demandé à l'impression, jamais enregistré</p>
+    <nav class="jump" id="jump"></nav>
+  </header>
+  <form id="form" autocomplete="off" onsubmit="return false"></form>
+</div>
+
+<div class="bar"><div class="in">
+  <button type="button" class="btn" id="btnHist">Bilans</button>
+  <button type="button" class="btn" id="btnNew">Nouveau</button>
+  <button type="button" class="btn" id="btnSave">Enregistrer</button>
+  <button type="button" class="btn primary" id="btnPrint">Imprimer</button>
+</div></div>
+
+<!-- Impression -->
+<div class="overlay" id="printSheet" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="psTitle">
+    <h3 id="psTitle">Imprimer le bilan</h3>
+    <div class="field">
+      <label for="nom">Nom / prénom du patient</label>
+      <input type="text" id="nom" placeholder="Ajouté à l'impression, jamais enregistré" autocomplete="off" autocapitalize="words">
+    </div>
+    <label class="check" id="evoWrap"><input type="checkbox" id="evo" checked><span id="evoTxt">Ajouter l'évolution depuis le bilan initial</span></label>
+    <label class="check" id="saveWrap"><input type="checkbox" id="alsoSave" checked><span>Enregistrer aussi dans l'historique</span></label>
+    <p class="hint">Dans la fenêtre d'impression : choisis ton imprimante, ou touche Partager pour enregistrer en PDF.</p>
+    <div id="printMsg" class="msg" hidden></div>
+    <div class="row">
+      <button type="button" class="btn" id="btnPrintCancel">Fermer</button>
+      <button type="button" class="btn primary" id="btnPrintGo">Imprimer / PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- Nouveau -->
+<div class="overlay" id="confirmNew" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="newTitle">
+    <h3 id="newTitle">Commencer un nouveau bilan ?</h3>
+    <p class="hint" id="newHint">Le formulaire sera vidé. Les bilans enregistrés dans l'historique ne sont pas touchés.</p>
+    <div class="row">
+      <button type="button" class="btn" id="btnNewCancel">Annuler</button>
+      <button type="button" class="btn danger" id="btnNewOk">Vider le formulaire</button>
+    </div>
+  </div>
+</div>
+
+<!-- Historique -->
+<div class="overlay full" id="hist" hidden>
+  <div class="card" role="dialog" aria-modal="true" aria-labelledby="histTitle">
+    <div class="histhead"><h3 id="histTitle">Bilans enregistrés</h3><button type="button" class="btn small" id="btnHistClose">Fermer</button></div>
+    <div id="histBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden role="status"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<div id="print"></div>
+
+<script>
+(function(){
+const KEY='bdk-draft-v1', HKEY='bdk-entete-v1', HIST='bdk-history-v1';
+const DEFAULT_HEADER='';
+const pad=n=>String(n).padStart(2,'0');
+const today=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+
+const SECTIONS=[
+ {id:'bilan',title:'Bilan',pdf:false,fields:[
+  {k:'code',l:'Code patient (jamais le nom)',t:'text',ph:'ex. P-023',half:1},
+  {k:'date',l:'Date du bilan',t:'date',half:1},
+  {k:'type',l:'Type de bilan',t:'radio',o:['Initial','Intermédiaire','Final']}]},
+ {id:'patient',title:'Patient',fields:[
+  {k:'age',l:'Âge',t:'num',u:'ans',half:1},
+  {k:'profession',l:'Profession',t:'text',half:1},
+  {k:'poids',l:'Poids',t:'num',u:'kg',half:1},
+  {k:'taille',l:'Taille',t:'num',u:'cm',half:1},
+  {k:'imc',l:'IMC',t:'calc',half:1},
+  {k:'lateralite',l:'Latéralité',t:'radio',o:['Droitier','Gaucher','Ambidextre']},
+  {k:'sport',l:'Activités sportives / loisirs',t:'area'},
+  {k:'medicaments',l:'Médicaments',t:'area'},
+  {k:'atcd_fam',l:'Antécédents familiaux à connaître',pl:'Antécédents familiaux',t:'area'}]},
+ {id:'ordonnance',title:'Ordonnance',fields:[
+  {k:'ord_date',l:'Date de l\'ordonnance',pl:'Ordonnance du',t:'date',half:1},
+  {k:'prescripteur',l:'Médecin prescripteur',pl:'Prescripteur',t:'text',half:1},
+  {k:'motif',l:'Diagnostic médical / motif de prescription',pl:'Motif',t:'area'},
+  {k:'nb_seances',l:'Nombre de séances',pl:'Séances',t:'num',half:1},
+  {k:'frequence',l:'Fréquence',t:'text',ph:'ex. 2×/semaine',half:1},
+  {k:'premiere_seance',l:'Date de la 1re séance',pl:'1re séance',t:'date',half:1},
+  {k:'bilan_initial',l:'Bilan initial fait le',t:'date',half:1},
+  {k:'premiere_ord',l:'Première ordonnance pour cette pathologie ?',pl:'1re ordonnance pour cette pathologie',t:'radio',o:['Oui','Non']},
+  {k:'premiere_ord_date',l:'Si non, date de la 1re ordonnance',pl:'Date 1re ordonnance',t:'date',half:1,if:['premiere_ord','Non']},
+  {k:'examens',l:'Examens complémentaires (radio, IRM, écho…)',pl:'Examens complémentaires',t:'area'}]},
+ {id:'anamnese',title:'Anamnèse',fields:[
+  {k:'atcd',l:'Maladies connues, antécédents médicaux et chirurgicaux',pl:'Antécédents',t:'area'},
+  {k:'debut',l:'Mode de début',t:'radio',o:['Traumatique','Progressif','Post-opératoire','Inconnu']},
+  {k:'debut_date',l:'Date / circonstances du début',pl:'Début',t:'text'},
+  {k:'douleur',l:'Description (localisation, irradiation, type de douleur, symptômes)',pl:'Description',t:'area'},
+  {k:'aggrave',l:'Ce qui aggrave',pl:'Aggravé par',t:'area'},
+  {k:'soulage',l:'Ce qui soulage',pl:'Soulagé par',t:'area'},
+  {k:'horaire',l:'Rythme de la douleur',pl:'Rythme',t:'chips',o:['Mécanique','Inflammatoire','Réveils nocturnes','Dérouillage matinal > 30 min']},
+  {k:'eva_repos',l:'Douleur au repos (0-10)',pl:'EVA repos',t:'eva'},
+  {k:'eva_mvt',l:'Douleur en mouvement (0-10)',pl:'EVA mouvement',t:'eva'},
+  {k:'eva_nuit',l:'Douleur la nuit (0-10)',pl:'EVA nuit',t:'eva'},
+  {k:'traitements',l:'Traitements déjà essayés (kiné, infiltration, chirurgie…)',pl:'Traitements antérieurs',t:'area'},
+  {k:'retentissement',l:'Conséquences dans la vie quotidienne, le travail, le sport',pl:'Retentissement',t:'area'},
+  {k:'attentes',l:'Attentes du patient',t:'area'},
+  {k:'rouges',l:'Drapeaux rouges',t:'chips',red:1,excl:'Aucun',o:['Aucun','Fièvre','Perte de poids inexpliquée','Douleur nocturne non mécanique','Troubles sphinctériens','Déficit neuro progressif','Antécédent de cancer','Traumatisme violent']},
+  {k:'jaunes',l:'Drapeaux jaunes',t:'chips',excl:'Aucun',o:['Aucun','Peur du mouvement','Catastrophisme','Arrêt de travail','Contexte psycho-social difficile']},
+  {k:'drapeaux_notes',l:'Précisions drapeaux',t:'text'}]},
+ {id:'examen',title:'Examen',fields:[
+  {k:'inspection',l:'Inspection / posture / morphostatique',pl:'Inspection',t:'area'},
+  {k:'palpation',l:'Palpation',t:'area'},
+  {k:'local',l:'Bilan local',t:'chips',o:['Cicatrice','Œdème','Hématome','Rougeur / chaleur','Amyotrophie']},
+  {k:'local_notes',l:'Précisions bilan local',pl:'Bilan local, précisions',t:'area'},
+  {k:'perimetrie',l:'Périmétrie',t:'table',cols:['Repère','Atteint','Sain'],w:[.5,.25,.25]},
+  {k:'articulaire',l:'Bilan articulaire (quantité et qualité)',pl:'Bilan articulaire',t:'artic'},
+  {k:'musculaire',l:'Bilan musculaire (force)',t:'table',cols:['Groupe musculaire / contraction','Cotation'],w:[.75,.25]},
+  {k:'sensibilite',l:'Sensibilité / examen neurologique (réflexes, dermatomes)',pl:'Sensibilité / neuro',t:'area'},
+  {k:'tspec',l:'Tests spécifiques',t:'tests'},
+  {k:'tests',l:'Autres tests / remarques',t:'area'},
+  {k:'aide',l:'Aide à la locomotion',t:'radio',o:['Aucune','1 canne','2 cannes','Déambulateur','Fauteuil']},
+  {k:'marche',l:'Marche / transferts / escaliers',pl:'Marche, transferts',t:'area'},
+  {k:'equilibre',l:'Équilibre / proprioception',pl:'Équilibre',t:'area'},
+  {k:'score',l:'Score fonctionnel (nom et résultat)',pl:'Score fonctionnel',t:'text',ph:'ex. EIFEL 12/24, DASH 35'}]},
+ {id:'diagnostic',title:'Diagnostic kiné',fields:[
+  {k:'deficiences',l:'Déficiences (structures et fonctions)',pl:'Déficiences',t:'area'},
+  {k:'limitations',l:'Limitations d\'activité',t:'area'},
+  {k:'restrictions',l:'Restrictions de participation (travail, loisirs, vie sociale)',pl:'Restrictions de participation',t:'area'},
+  {k:'facteurs',l:'Facteurs personnels / environnementaux, pronostic',pl:'Facteurs contextuels',t:'area'},
+  {k:'synthese',l:'Synthèse',t:'area'}]},
+ {id:'objectifs',title:'Objectifs',fields:[
+  {k:'objectifs',l:'Objectifs thérapeutiques',pl:'Objectifs',t:'chips',o:['Diminution de la douleur','Récupération de la mobilité','Renforcement musculaire','Amélioration de la posture','Reprise activité physique','Réduction de l\'œdème','Équilibre / proprioception','Autonomie au quotidien','Reprise du travail','Éducation thérapeutique']},
+  {k:'obj_patient',l:'Objectifs du patient',t:'area'},
+  {k:'obj_autres',l:'Autres objectifs',t:'text'}]},
+ {id:'traitement',title:'Traitement',fields:[
+  {k:'techniques',l:'Techniques utilisées',pl:'Techniques',t:'chips',o:['Massages','Mobilisations passives','Thérapie manuelle','Exercices actifs / assistés','Renforcement','Étirements','Proprioception','Ultrasons','Ondes de choc','Électrothérapie / TENS','Cryo / thermothérapie','Drainage lymphatique','Taping / contention','Conseils / éducation']},
+  {k:'tech_details',l:'Précisions (zones, paramètres, autres techniques)',pl:'Précisions',t:'area'}]},
+ {id:'suivi',title:'Suivi',fields:[
+  {k:'autonomie',l:'Exercices donnés à réaliser en autonomie',pl:'Exercices en autonomie',t:'area'},
+  {k:'evolution',l:'Évolution (techniques efficaces, résultats obtenus)',pl:'Évolution',t:'area'}]},
+ {id:'reglages',title:'En-tête du cabinet',pdf:false,fields:[
+  {k:'_entete',l:'Lignes imprimées en haut à gauche',t:'area',store:'header',ph:'Nom, n° ADELI, adresse du cabinet…'}]}
+];
+const FIELDS={}; SECTIONS.forEach(s=>s.fields.forEach(f=>{f.sec=s.id;FIELDS[f.k]=f}));
+
+const MVTS=['Épaule flexion','Épaule extension','Épaule abduction','Épaule rotation externe','Épaule rotation interne','Coude flexion','Coude extension','Avant-bras pronation','Avant-bras supination','Poignet flexion','Poignet extension','Hanche flexion','Hanche extension','Hanche abduction','Hanche adduction','Hanche rotation externe','Hanche rotation interne','Genou flexion','Genou extension','Cheville flexion dorsale','Cheville flexion plantaire','Cervical flexion','Cervical extension','Cervical inclinaison','Cervical rotation','Lombaire flexion','Lombaire extension','Lombaire inclinaison','Lombaire rotation'];
+const QTY=['Complète','Légère','Modérée','Sévère','Nulle'];
+const QUAL=['Fluide','Douloureux','Arc douloureux','Compensations','Raideur','Crépitations','Appréhension'];
+const FIN=['Normale','Ferme','Dure','Molle','Vide (douleur)'];
+const REGIONS=['Lombaire / bassin','Cervical','Épaule','Hanche','Genou','Cheville','Fonctionnel'];
+const TESTS=[
+ {r:'Lombaire / bassin',id:'lasegue',n:'Lasègue',d:"Décubitus dorsal, élévation passive de la jambe tendue. Positif si douleur radiculaire irradiant sous le genou entre 30° et 70°."},
+ {r:'Lombaire / bassin',id:'lasegue_x',n:'Lasègue croisé',d:"Même manœuvre sur la jambe saine. Positif si la douleur est reproduite du côté atteint. Très spécifique d'une hernie discale."},
+ {r:'Lombaire / bassin',id:'slump',n:'Slump test',d:"Assis, flexion du tronc puis de la nuque, extension du genou et flexion dorsale de cheville. Positif si les symptômes sont reproduits et diminuent quand la nuque repasse en extension."},
+ {r:'Lombaire / bassin',id:'leri',n:'Léri (PKB)',d:"Décubitus ventral, flexion passive du genou. Positif si douleur à la face antérieure de la cuisse : souffrance L3-L4 (cruralgie)."},
+ {r:'Lombaire / bassin',id:'faber',n:'FABER (Patrick)',d:"Décubitus dorsal, talon sur le genou opposé (flexion, abduction, rotation externe), pression sur le genou. Douleur inguinale : hanche. Douleur fessière postérieure : sacro-iliaque."},
+ {r:'Cervical',id:'spurling',n:'Spurling',d:"Extension, inclinaison et rotation de la tête vers le côté atteint, puis compression axiale douce. Positif si douleur radiculaire dans le membre supérieur."},
+ {r:'Cervical',id:'distraction',n:'Distraction cervicale',d:"Traction axiale douce de la tête. Positif si les symptômes radiculaires diminuent."},
+ {r:'Cervical',id:'ultt1',n:'ULTT1 (médian)',d:"Abaissement de l'épaule, abduction 90-110°, rotation externe, supination, extension poignet et doigts, puis extension du coude. Positif si les symptômes sont reproduits et modifiés par l'inclinaison cervicale."},
+ {r:'Épaule',id:'hawkins',n:'Hawkins-Kennedy',d:"Flexion d'épaule à 90°, coude à 90°, rotation interne passive forcée. Positif si douleur : conflit sous-acromial."},
+ {r:'Épaule',id:'neer',n:'Neer',d:"Omoplate stabilisée, élévation passive du bras en rotation interne. Positif si douleur antéro-supérieure : conflit sous-acromial."},
+ {r:'Épaule',id:'jobe',n:'Jobe',d:"Bras à 90° d'abduction dans le plan de l'omoplate, pouces vers le bas, résistance vers le bas. Douleur ou faiblesse : supra-épineux."},
+ {r:'Épaule',id:'patte',n:'Patte',d:"Bras à 90° d'abduction, coude à 90°, rotation externe contre résistance. Douleur ou faiblesse : infra-épineux."},
+ {r:'Épaule',id:'belly',n:'Belly press',d:"Main à plat sur le ventre, pousser contre l'abdomen en gardant le coude en avant. Positif si le coude recule ou si le poignet fléchit : subscapulaire."},
+ {r:'Épaule',id:'palmup',n:'Palm-up (Speed)',d:"Bras tendu en flexion à 90°, paume vers le haut, résistance vers le bas. Douleur dans la gouttière bicipitale : long chef du biceps."},
+ {r:'Épaule',id:'apprehension',n:'Appréhension',d:"Abduction 90°, coude 90°, rotation externe progressive. Positif si appréhension (pas seulement douleur) : instabilité antérieure. Soulagement à la poussée postérieure (relocation) : confirme."},
+ {r:'Hanche',id:'fadir',n:'FADIR',d:"Décubitus dorsal, flexion de hanche à 90°, adduction et rotation interne. Douleur inguinale : conflit fémoro-acétabulaire ou atteinte du labrum."},
+ {r:'Hanche',id:'thomas',n:'Thomas',d:"Décubitus dorsal en bout de table, flexion maximale de la hanche opposée. Positif si la cuisse testée décolle : raideur des fléchisseurs de hanche (si le genou s'étend : droit fémoral)."},
+ {r:'Hanche',id:'trendelenburg',n:'Trendelenburg',d:"Appui unipodal 30 s. Positif si le bassin chute du côté non portant : faiblesse du moyen fessier du côté en appui."},
+ {r:'Genou',id:'lachman',n:'Lachman',d:"Genou fléchi à 20-30°, translation antérieure du tibia. Positif si translation augmentée sans arrêt dur : LCA."},
+ {r:'Genou',id:'tiroirs',n:'Tiroirs ant. / post.',d:"Genou fléchi à 90°, pied fixé, translation antérieure puis postérieure du tibia. Antérieur : LCA. Postérieur : LCP. Préciser lequel."},
+ {r:'Genou',id:'valgus',n:'Valgus / varus forcé',d:"Contrainte en valgus puis en varus, à 0° et à 30° de flexion. Douleur ou laxité : LLI (valgus) ou LLE (varus). Laxité dès 0° : lésion associée du pivot central."},
+ {r:'Genou',id:'mcmurray',n:'McMurray',d:"Flexion maximale du genou, rotation du tibia puis extension progressive. Douleur ou claquement sur l'interligne : lésion méniscale."},
+ {r:'Genou',id:'thessaly',n:'Thessaly',d:"Appui unipodal, genou fléchi à 20°, rotations du corps à 3 reprises. Douleur ou blocage sur l'interligne : lésion méniscale."},
+ {r:'Genou',id:'choc',n:'Choc rotulien',d:"Genou en extension, chasser le liquide du cul-de-sac sous-quadricipital puis appuyer sur la rotule. Positif si la rotule rebondit : épanchement."},
+ {r:'Cheville',id:'tiroir_chev',n:'Tiroir antérieur',d:"Légère flexion plantaire, translation antérieure du talus. Laxité ou douleur : ligament talo-fibulaire antérieur."},
+ {r:'Cheville',id:'tilt',n:'Talar tilt',d:"Varus forcé du calcanéum en position neutre. Laxité ou douleur : ligament calcanéo-fibulaire."},
+ {r:'Cheville',id:'squeeze',n:'Squeeze test',d:"Compression du tibia et de la fibula à mi-jambe. Douleur distale : lésion de la syndesmose."},
+ {r:'Cheville',id:'thompson',n:'Thompson',d:"Décubitus ventral, pied hors de la table, compression du mollet. Absence de flexion plantaire : rupture du tendon calcanéen."},
+ {r:'Fonctionnel',id:'unipodal',n:'Appui unipodal',m:1,d:"Tenir sur un pied, yeux ouverts puis fermés. Noter le temps. Moins de 5 s chez la personne âgée : risque de chute."},
+ {r:'Fonctionnel',id:'tug',n:'Timed Up and Go',m:1,d:"Se lever d'une chaise, marcher 3 m, faire demi-tour, revenir s'asseoir. Noter le temps. Plus de 13,5 s : risque de chute augmenté."},
+ {r:'Fonctionnel',id:'sts5',n:'Assis-debout ×5',m:1,d:"Se lever et s'asseoir 5 fois le plus vite possible, bras croisés. Noter le temps. Plus de 15 s chez la personne âgée : risque de chute."}
+];
+const TBYID={}; TESTS.forEach(t=>TBYID[t.id]=t);
+const newArt=()=>({mvt:'',cote:'',pq:'',pdeg:'',aq:'',adeg:'',sain:'',qual:[],fin:''});
+const artFilled=a=>!!(a&&(a.mvt||a.cote||a.pq||a.aq||a.pdeg||a.adeg||a.sain||(a.qual&&a.qual.length)||a.fin));
+let REGION=null; const OPEN=new Set();
+
+/* ---------- Stockage ---------- */
+function lsGet(k,def){try{const v=localStorage.getItem(k);return v===null?def:v}catch(e){return def}}
+function lsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}
+let S={}; try{S=JSON.parse(lsGet(KEY,'{}'))||{}}catch(e){S={}}
+if(!S.date) S.date=today();
+let HEADER=lsGet(HKEY,DEFAULT_HEADER);
+if(Array.isArray(S.articulaire)&&S.articulaire.length&&Array.isArray(S.articulaire[0])) S.articulaire=S.articulaire.map(r=>Object.assign(newArt(),{mvt:r[0]||'',pdeg:r[1]||'',adeg:r[2]||'',sain:r[3]||''}));
+function loadHist(){try{const h=JSON.parse(lsGet(HIST,'[]'));return Array.isArray(h)?h:[]}catch(e){return []}}
+function saveHist(h){return lsSet(HIST,JSON.stringify(h))}
+try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
+
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=k=>k==='_entete'?HEADER:S[k];
+
+/* ---------- Formulaire ---------- */
+function fieldHTML(f){
+  const id='f-'+f.k, v=val(f.k);
+  let inner='', useLabel=true;
+  if(f.t==='text'||f.t==='num'){
+    const inp=`<input type="text" id="${id}" data-k="${f.k}" ${f.t==='num'?'inputmode="decimal"':''} placeholder="${esc(f.ph||'')}" value="${esc(v||'')}" ${f.k==='code'?'autocapitalize="characters"':''}>`;
+    inner=f.u?`<div class="unitbox">${inp}<span class="u">${f.u}</span></div>`:inp;
+  } else if(f.t==='date'){
+    inner=`<input type="date" id="${id}" data-k="${f.k}" value="${esc(v||'')}">`;
+  } else if(f.t==='area'){
+    inner=`<textarea id="${id}" data-k="${f.k}" rows="2" placeholder="${esc(f.ph||'')}">${esc(v||'')}</textarea>`;
+  } else if(f.t==='calc'){
+    inner=`<output class="calc" id="${id}">–</output>`; useLabel=false;
+  } else if(f.t==='radio'||f.t==='chips'){
+    useLabel=false;
+    inner=`<div class="chips${f.red?' red':''}" role="group" aria-label="${esc(f.l)}">`+f.o.map(o=>`<button type="button" class="chip" data-k="${f.k}" data-v="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join('')+`</div>`;
+  } else if(f.t==='eva'){
+    useLabel=false;
+    inner=`<div class="eva" role="group" aria-label="${esc(f.l)}">`+[...Array(11).keys()].map(n=>`<button type="button" class="chip" data-k="${f.k}" data-v="${n}" aria-pressed="false">${n}</button>`).join('')+`</div><div class="eva-ends"><span>aucune</span><span>maximale</span></div>`;
+  } else if(f.t==='artic'){
+    useLabel=false;
+    inner=`<div id="artic-box"></div><button type="button" class="addrow" data-aadd="1">+ Ajouter un mouvement</button><datalist id="mvts">${MVTS.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`;
+  } else if(f.t==='tests'){
+    useLabel=false;
+    inner=`<p class="hint">Touche un test pour voir comment le réaliser et noter le résultat.</p><div class="chips regions" id="regions"></div><div class="tchips" id="tests-box"></div>`;
+  } else if(f.t==='table'){
+    useLabel=false;
+    inner=`<div class="tbl"><table><thead><tr>${f.cols.map(c=>`<th>${esc(c)}</th>`).join('')}<th></th></tr></thead><tbody id="tb-${f.k}"></tbody></table></div><button type="button" class="addrow" data-addrow="${f.k}">+ Ajouter une ligne</button>`;
+  }
+  const lab=useLabel?`<label for="${id}">${esc(f.l)}</label>`:`<div class="lbl">${esc(f.l)}</div>`;
+  return `<div class="field${f.half?' half':''}" data-wrap="${f.k}">${lab}${inner}</div>`;
+}
+function tbodyHTML(f){
+  if(!Array.isArray(S[f.k])||!S[f.k].length) S[f.k]=[f.cols.map(()=> '')];
+  return S[f.k].map((r,ri)=>`<tr>${f.cols.map((c,ci)=>`<td><input type="text" id="t-${f.k}-${ri}-${ci}" data-tk="${f.k}" data-r="${ri}" data-c="${ci}" value="${esc(r[ci]||'')}" aria-label="${esc(c)}"></td>`).join('')}<td class="x"><button type="button" class="iconbtn" data-delrow="${f.k}" data-r="${ri}" aria-label="Supprimer la ligne">×</button></td></tr>`).join('');
+}
+
+const form=document.getElementById('form'), jump=document.getElementById('jump');
+form.innerHTML=SECTIONS.map(s=>`<section class="sec" id="s-${s.id}"><h2><span>${esc(s.title)}</span><span class="n" id="n-${s.id}"></span></h2><div class="grid">${s.fields.map(fieldHTML).join('')}</div>${s.id==='reglages'?'<p class="hint" style="padding:0 14px 14px">Enregistré sur cet iPhone uniquement, jamais en ligne. Conservé d\'un bilan à l\'autre.</p>':''}</section>`).join('');
+jump.innerHTML=SECTIONS.filter(s=>s.id!=='reglages').map(s=>`<a href="#s-${s.id}" data-jump="${s.id}">${esc(s.title)} <span class="n" id="j-${s.id}"></span></a>`).join('');
+jump.addEventListener('click',e=>{const a=e.target.closest('a[data-jump]');if(!a)return;e.preventDefault();document.getElementById('s-'+a.dataset.jump).scrollIntoView({block:'start'})});
+
+function artRows(){if(!Array.isArray(S.articulaire)||!S.articulaire.length)S.articulaire=[newArt()];return S.articulaire}
+function abtns(r,field,opts,cur,multi){return opts.map(o=>{const on=multi?(cur||[]).includes(o):cur===o;return `<button type="button" class="chip" data-aset="${field}" data-r="${r}" data-v="${esc(o)}" aria-pressed="${on}">${esc(o)}</button>`}).join('')}
+function degIn(r,k,v,lab){return `<span class="deg"><input type="text" inputmode="decimal" id="a-${r}-${k}" data-ain="${k}" data-r="${r}" value="${esc(v||'')}" placeholder="°" aria-label="${lab}"></span>`}
+function renderArtic(){
+  const box=document.getElementById('artic-box'); if(!box) return;
+  box.innerHTML=artRows().map((a,r)=>`<div class="artrow">
+    <div class="head"><input type="text" id="a-${r}-mvt" data-ain="mvt" data-r="${r}" list="mvts" placeholder="Articulation / mouvement" value="${esc(a.mvt)}" aria-label="Articulation / mouvement"><div class="chips">${abtns(r,'cote',['G','D'],a.cote)}</div><button type="button" class="iconbtn" data-adel="${r}" aria-label="Supprimer ce mouvement">×</button></div>
+    <div class="sub"><span>Amplitude passive · limitation</span>${degIn(r,'pdeg',a.pdeg,'Amplitude passive en degrés')}</div>
+    <div class="seg">${abtns(r,'pq',QTY,a.pq)}</div>
+    <div class="sub"><span>Amplitude active · limitation</span>${degIn(r,'adeg',a.adeg,'Amplitude active en degrés')}</div>
+    <div class="seg">${abtns(r,'aq',QTY,a.aq)}</div>
+    <div class="sub"><span>Côté sain</span>${degIn(r,'sain',a.sain,'Côté sain en degrés')}</div>
+    <div class="sub"><span>Qualité du mouvement</span></div>
+    <div class="chips">${abtns(r,'qual',QUAL,a.qual,1)}</div>
+    <div class="sub"><span>Sensation de fin de course (passif)</span></div>
+    <div class="chips">${abtns(r,'fin',FIN,a.fin)}</div>
+  </div>`).join('')+`<p class="scale">Limitation : légère &lt; 25 %, modérée 25 à 50 %, sévère &gt; 50 % de l'amplitude attendue, nulle = mouvement impossible.</p>`;
+}
+const tState=id=>(S.tspec&&S.tspec[id])||{};
+const tDoneIn=(st,id)=>{const t=(st&&st[id])||{};return !!(t.res||t.cote||(t.note&&String(t.note).trim()))};
+const tDone=id=>tDoneIn(S.tspec,id);
+const resCls=v=>(v==='Positif'||v==='Anormal')?'pos':(v==='Négatif'||v==='Normal')?'neg':'dbt';
+function renderTests(){
+  const reg=document.getElementById('regions'), box=document.getElementById('tests-box'); if(!reg) return;
+  const done=TESTS.filter(t=>tDone(t.id)).length;
+  if(!REGION||(REGION==='Réalisés'&&!done)) REGION=REGIONS[0];
+  reg.innerHTML=REGIONS.concat(done?['Réalisés']:[]).map(r=>`<button type="button" class="chip" data-region="${esc(r)}" aria-pressed="${r===REGION}">${esc(r)}${r==='Réalisés'?' ('+done+')':''}</button>`).join('');
+  const list=TESTS.filter(t=>REGION==='Réalisés'?tDone(t.id):t.r===REGION);
+  box.innerHTML=list.map(t=>{
+    const s=tState(t.id), open=OPEN.has(t.id);
+    let h=`<button type="button" class="chip" data-topen="${t.id}" aria-expanded="${open}">${esc(t.n)}${s.res?`<span class="dot ${resCls(s.res)}"></span>`:''}</button>`;
+    if(open){
+      const res=t.m?['Normal','Anormal']:['Positif','Négatif','Douteux'];
+      h+=`<div class="tcard"><p>${esc(t.d)}</p><div class="row2">${['G','D'].map(c=>`<button type="button" class="chip" data-tset="cote" data-t="${t.id}" data-v="${c}" aria-pressed="${s.cote===c}">${c}</button>`).join('')}<span class="gap"></span>${res.map(v=>`<button type="button" class="chip${resCls(v)==='pos'?' pos':''}" data-tset="res" data-t="${t.id}" data-v="${v}" aria-pressed="${s.res===v}">${v}</button>`).join('')}</div><input type="text" id="tn-${t.id}" data-tnote="${t.id}" value="${esc(s.note||'')}" placeholder="${t.m?'Temps / mesure':'Précisions (angle, douleur…)'}" aria-label="Précisions ${esc(t.n)}"></div>`;
+    }
+    return h;
+  }).join('');
+}
+
+function syncButtons(k){
+  const f=FIELDS[k], v=S[k];
+  form.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>{
+    const on=f.t==='chips'?(Array.isArray(v)&&v.includes(b.dataset.v)):(v!=null&&v!==''&&String(v)===b.dataset.v);
+    b.setAttribute('aria-pressed',on?'true':'false');
+  });
+}
+function autosize(t){t.style.height='auto';t.style.height=(t.scrollHeight+2)+'px'}
+function filled(f){
+  if(f.t==='calc'||f.store) return false;
+  const v=S[f.k];
+  if(f.t==='table') return Array.isArray(v)&&v.some(r=>r.some(c=>c&&String(c).trim()));
+  if(f.t==='artic') return Array.isArray(v)&&v.some(artFilled);
+  if(f.t==='tests') return !!v&&Object.keys(v).some(tDone);
+  if(Array.isArray(v)) return v.length>0;
+  return v!=null&&String(v).trim()!=='';
+}
+const num=x=>{if(x==null)return NaN;const m=String(x).replace(',','.').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):NaN};
+function imcOf(d){const p=num(d.poids),t=num(d.taille)/100;return (p>0&&t>0)?(p/(t*t)).toFixed(1).replace('.',','):''}
+function visible(f,d){d=d||S;return !f.if||d[f.if[0]]===f.if[1]}
+function refresh(){
+  SECTIONS.forEach(s=>{
+    const n=s.fields.filter(f=>visible(f)&&filled(f)).length, tot=s.fields.filter(f=>f.t!=='calc'&&!f.store).length;
+    const el=document.getElementById('n-'+s.id); if(el) el.textContent=s.id==='reglages'?'':`${n} / ${tot}`;
+    const j=document.getElementById('j-'+s.id); if(j) j.textContent=n?n:'';
+    s.fields.forEach(f=>{const w=form.querySelector(`[data-wrap="${f.k}"]`); if(w) w.hidden=!visible(f)});
+  });
+  const o=document.getElementById('f-imc'); if(o) o.textContent=imcOf(S)||'–';
+  const sub=document.getElementById('topsub');
+  sub.textContent=S._hid?`Bilan enregistré ${S.code||''} · modifs à réenregistrer`:'Données sur cet iPhone uniquement · nom demandé à l\'impression';
+}
+let saveT=null;
+function saveDraft(){clearTimeout(saveT);saveT=setTimeout(()=>{lsSet(KEY,JSON.stringify(S));lsSet(HKEY,HEADER)},300)}
+function changed(){refresh();saveDraft()}
+
+form.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.k){ if(t.dataset.k==='_entete') HEADER=t.value; else S[t.dataset.k]=t.value; if(t.tagName==='TEXTAREA') autosize(t); changed(); }
+  else if(t.dataset.tk){ S[t.dataset.tk][+t.dataset.r][+t.dataset.c]=t.value; changed(); }
+  else if(t.dataset.ain){ artRows()[+t.dataset.r][t.dataset.ain]=t.value; changed(); }
+  else if(t.dataset.tnote){ S.tspec=S.tspec||{}; (S.tspec[t.dataset.tnote]=S.tspec[t.dataset.tnote]||{}).note=t.value; changed(); }
+});
+form.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.region){REGION=b.dataset.region;renderTests();return}
+  if(b.dataset.topen){const id=b.dataset.topen;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderTests();return}
+  if(b.dataset.tset){const id=b.dataset.t,fl=b.dataset.tset,v=b.dataset.v;S.tspec=S.tspec||{};const s=S.tspec[id]=S.tspec[id]||{};s[fl]=s[fl]===v?'':v;renderTests();changed();return}
+  if(b.dataset.aadd){artRows().push(newArt());renderArtic();const i=document.getElementById('a-'+(S.articulaire.length-1)+'-mvt');if(i)i.focus();changed();return}
+  if(b.dataset.adel!==undefined){artRows().splice(+b.dataset.adel,1);renderArtic();changed();return}
+  if(b.dataset.aset){const a=artRows()[+b.dataset.r],fl=b.dataset.aset,v=b.dataset.v;
+    if(fl==='qual'){const q=a.qual||[];a.qual=q.includes(v)?q.filter(x=>x!==v):QUAL.filter(o=>q.includes(o)||o===v)}else a[fl]=a[fl]===v?'':v;
+    renderArtic();changed();return}
+  if(b.dataset.addrow){const f=FIELDS[b.dataset.addrow]; S[f.k].push(f.cols.map(()=> '')); document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f); const inp=document.getElementById(`t-${f.k}-${S[f.k].length-1}-0`); if(inp) inp.focus(); changed(); return;}
+  if(b.dataset.delrow){const f=FIELDS[b.dataset.delrow]; S[f.k].splice(+b.dataset.r,1); document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f); changed(); return;}
+  if(!b.dataset.k) return;
+  const f=FIELDS[b.dataset.k], v=b.dataset.v;
+  if(f.t==='chips'){
+    let a=Array.isArray(S[f.k])?S[f.k].slice():[];
+    if(a.includes(v)) a=a.filter(x=>x!==v);
+    else { if(f.excl){ if(v===f.excl) a=[]; else a=a.filter(x=>x!==f.excl);} a.push(v); a=f.o.filter(o=>a.includes(o)); }
+    S[f.k]=a;
+  } else { S[f.k]=String(S[f.k])===v?'':v; }
+  syncButtons(f.k); changed();
+});
+
+/* Remplit tout le formulaire depuis S (après chargement / nouveau) */
+function fillForm(){
+  SECTIONS.forEach(s=>s.fields.forEach(f=>{
+    const el=document.getElementById('f-'+f.k);
+    if(el&&(el.tagName==='INPUT'||el.tagName==='TEXTAREA')){el.value=val(f.k)||'';if(el.tagName==='TEXTAREA')autosize(el)}
+    if(f.t==='table') document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f);
+    if(['radio','chips','eva'].includes(f.t)) syncButtons(f.k);
+  }));
+  OPEN.clear(); REGION=null; renderArtic(); renderTests(); refresh();
+}
+fillForm();
+window.addEventListener('resize',()=>form.querySelectorAll('textarea').forEach(autosize));
+
+/* ---------- Toast ---------- */
+const toastEl=document.getElementById('toast'); let toastT=null;
+function toast(t){toastEl.textContent=t;toastEl.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>toastEl.hidden=true,3200)}
+
+/* ---------- Texte des valeurs ---------- */
+function fmtDate(v){if(!v)return'';const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v);return m?`${m[3]}/${m[2]}/${m[1]}`:v}
+const deg=v=>{v=String(v||'').trim();return /^\d+([.,]\d+)?$/.test(v)?v+'°':v};
+const qtyTxt=q=>q?(q==='Complète'?'complète':q==='Nulle'?'impossible':'lim. '+q.toLowerCase()):'';
+const amp=(d,q)=>[deg(d),qtyTxt(q)].filter(Boolean).join(', ');
+function textOf(f,d){
+  const v=d[f.k];
+  switch(f.t){
+    case 'date': return fmtDate(v);
+    case 'num': return v&&String(v).trim()?String(v).trim()+(f.u?' '+f.u:''):'';
+    case 'eva': return v!=null&&v!==''?v+'/10':'';
+    case 'chips': return Array.isArray(v)?v.join(', '):'';
+    case 'calc': return imcOf(d);
+    default: return v?String(v).trim():'';
+  }
+}
+function blocksFor(s,d){
+  const out=[]; let inline=[];
+  const flush=()=>{if(inline.length){out.push({kind:'inline',pairs:inline});inline=[]}};
+  s.fields.forEach(f=>{
+    if(!visible(f,d)||f.store) return;
+    const label=f.pl||f.l;
+    if(f.t==='artic'){
+      const rows=(d.articulaire||[]).filter(artFilled).map(a=>[(a.mvt||'')+(a.cote?' ('+a.cote+')':''),amp(a.pdeg,a.pq),amp(a.adeg,a.aq),deg(a.sain),[(a.qual||[]).join(', '),a.fin?'fin : '+a.fin.toLowerCase():''].filter(Boolean).join(' ; ')]);
+      if(rows.length){flush();out.push({kind:'table',label,cols:['Mouvement','Passif','Actif','Sain','Qualité / fin de course'],w:[25,18,18,9,30],rows})}
+      return;
+    }
+    if(f.t==='tests'){
+      const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',s.note||'']});
+      if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows})}
+      return;
+    }
+    if(f.t==='table'){
+      const rows=(d[f.k]||[]).filter(r=>r.some(c=>c&&String(c).trim()));
+      if(rows.length){flush();out.push({kind:'table',label,cols:f.cols,w:f.w.map(x=>x*100),rows})}
+      return;
+    }
+    const t=textOf(f,d); if(!t) return;
+    if(f.t==='area'||f.t==='chips'){flush();out.push({kind:'para',label,val:t,red:f.k==='rouges'&&t!=='Aucun'})}
+    else inline.push([label,t]);
+  });
+  flush(); return out;
+}
+
+/* ---------- Historique ---------- */
+const normCode=c=>String(c||'').trim().toUpperCase();
+function snapshot(){const d=JSON.parse(JSON.stringify(S));delete d._hid;return d}
+function saveToHistory(silent){
+  const code=normCode(S.code);
+  if(!code){
+    if(!silent){toast('Indique un code patient avant d\'enregistrer.');const el=document.getElementById('f-code');document.getElementById('s-bilan').scrollIntoView({block:'start'});setTimeout(()=>el&&el.focus(),300)}
+    return false;
+  }
+  S.code=code; const el=document.getElementById('f-code'); if(el) el.value=code;
+  const h=loadHist(); const now=new Date().toISOString();
+  let e=S._hid&&h.find(x=>x.id===S._hid);
+  if(e){e.data=snapshot();e.code=code;e.date=S.date||'';e.type=S.type||'';e.savedAt=now}
+  else{e={id:uid(),code,date:S.date||'',type:S.type||'',savedAt:now,data:snapshot()};h.push(e);S._hid=e.id}
+  if(!saveHist(h)){toast('Enregistrement impossible : stockage plein ou bloqué.');return false}
+  changed();
+  if(!silent) toast(`Enregistré : ${code}, ${fmtDate(S.date)}${S.type?' ('+S.type.toLowerCase()+')':''}`);
+  return true;
+}
+document.getElementById('btnSave').addEventListener('click',()=>saveToHistory(false));
+
+function sortEntries(a,b){return (a.date||'').localeCompare(b.date||'')||(a.savedAt||'').localeCompare(b.savedAt||'')}
+function previousFor(code,curId,curDate){
+  const h=loadHist().filter(e=>e.code===code&&e.id!==curId&&(!curDate||!e.date||e.date<=curDate)).sort(sortEntries);
+  if(!h.length) return null;
+  return h.find(e=>e.data&&e.data.type==='Initial')||h[0];
+}
+
+/* ---------- Comparaison ---------- */
+function trend(a,b,dir){ // dir: 1 = plus haut c'est mieux, -1 = plus bas c'est mieux
+  const x=num(a),y=num(b); if(isNaN(x)||isNaN(y)||!dir) return '';
+  if(y===x) return 'eq'; return (y-x)*dir>0?'up':'down';
+}
+const cot=v=>{const m=String(v||'').match(/([0-5])\s*([+-])?/);return m?(+m[1]+(m[2]==='+'?.3:m[2]==='-'?-.3:0)):NaN};
+function compareRows(A,B){ // A = avant, B = maintenant
+  const rows=[]; const add=(sec,label,a,b,tr)=>{if((a===''||a==null)&&(b===''||b==null))return;rows.push({sec,label,a:a||'–',b:b||'–',tr:tr||''})};
+  const evs=[['eva_repos','Au repos'],['eva_mvt','En mouvement'],['eva_nuit','La nuit']];
+  evs.forEach(([k,l])=>{const a=A[k],b=B[k];add('Douleur (EVA)',l,a!==''&&a!=null?a+'/10':'',b!==''&&b!=null?b+'/10':'',trend(a,b,-1))});
+  const key=a=>(String(a.mvt||'').trim().toLowerCase()+'|'+(a.cote||''));
+  const am={}; (A.articulaire||[]).filter(artFilled).forEach(a=>am[key(a)]=a);
+  (B.articulaire||[]).filter(artFilled).forEach(b=>{
+    const a=am[key(b)]||{}; const name=(b.mvt||'Mouvement')+(b.cote?' ('+b.cote+')':'');
+    const tq=(x,y)=>{const i=QTY.indexOf(x),j=QTY.indexOf(y);return i<0||j<0?'':i===j?'eq':j<i?'up':'down'};
+    const tA=(dA,qA,dB,qB)=>trend(dA,dB,1)||tq(qA,qB);
+    add('Articulaire',name+' · passif',amp(a.pdeg,a.pq),amp(b.pdeg,b.pq),tA(a.pdeg,a.pq,b.pdeg,b.pq));
+    add('Articulaire',name+' · actif',amp(a.adeg,a.aq),amp(b.adeg,b.aq),tA(a.adeg,a.aq,b.adeg,b.aq));
+    const qa=[(a.qual||[]).join(', '),a.fin?'fin '+a.fin.toLowerCase():''].filter(Boolean).join(' ; ');
+    const qb=[(b.qual||[]).join(', '),b.fin?'fin '+b.fin.toLowerCase():''].filter(Boolean).join(' ; ');
+    if(qa||qb) add('Articulaire',name+' · qualité',qa,qb,'');
+  });
+  const mm={}; (A.musculaire||[]).forEach(r=>{if(r&&r[0])mm[String(r[0]).trim().toLowerCase()]=r[1]});
+  (B.musculaire||[]).forEach(r=>{if(!r||!r[0])return;const a=mm[String(r[0]).trim().toLowerCase()];const x=cot(a),y=cot(r[1]);add('Force musculaire',r[0],a||'',r[1]||'',isNaN(x)||isNaN(y)?'':x===y?'eq':y>x?'up':'down')});
+  const pm={}; (A.perimetrie||[]).forEach(r=>{if(r&&r[0])pm[String(r[0]).trim().toLowerCase()]=r});
+  (B.perimetrie||[]).forEach(r=>{if(!r||!r[0])return;const a=pm[String(r[0]).trim().toLowerCase()]||[];add('Périmétrie',r[0],[a[1],a[2]?'(sain '+a[2]+')':''].filter(Boolean).join(' '),[r[1],r[2]?'(sain '+r[2]+')':''].filter(Boolean).join(' '),'')});
+  TESTS.forEach(t=>{
+    const a=(A.tspec||{})[t.id]||{}, b=(B.tspec||{})[t.id]||{};
+    if(!tDoneIn(B.tspec,t.id)) return;
+    const fa=[a.res,a.note].filter(Boolean).join(', '), fb=[b.res,b.note].filter(Boolean).join(', ');
+    const good=v=>v==='Négatif'||v==='Normal', bad=v=>v==='Positif'||v==='Anormal';
+    const tr=(bad(a.res)&&good(b.res))?'up':(good(a.res)&&bad(b.res))?'down':(a.res&&a.res===b.res)?'eq':'';
+    add('Tests',t.n+(b.cote?' ('+b.cote+')':''),fa,fb,tr);
+  });
+  add('Fonction','Score fonctionnel',A.score||'',B.score||'','');
+  add('Fonction','Aide à la locomotion',A.aide||'',B.aide||'','');
+  add('Patient','Poids',A.poids?A.poids+' kg':'',B.poids?B.poids+' kg':'','');
+  return rows;
+}
+const TR_TXT={up:'▲ mieux',down:'▼ moins bien',eq:'= stable'};
+function cmpTableHTML(rows,forPrint){
+  let last='', h=`<table class="${forPrint?'':'cmp'}"><thead><tr><th>Critère</th><th>Avant</th><th>Maintenant</th><th></th></tr></thead><tbody>`;
+  rows.forEach(r=>{
+    if(!forPrint&&r.sec!==last){h+=`<tr><td class="sec" colspan="4">${esc(r.sec)}</td></tr>`;last=r.sec}
+    const lab=forPrint?`${esc(r.sec)} · ${esc(r.label)}`:esc(r.label);
+    h+=`<tr><td>${lab}</td><td>${esc(r.a)}</td><td>${esc(r.b)}</td><td class="trend ${r.tr}">${r.tr?TR_TXT[r.tr]:''}</td></tr>`;
+  });
+  return h+'</tbody></table>';
+}
+
+/* ---------- Écran historique ---------- */
+const histEl=document.getElementById('hist'), histBody=document.getElementById('histBody');
+let delArm=null, histFilter='';
+function openHist(){histEl.hidden=false;delArm=null;renderHistList()}
+document.getElementById('btnHist').addEventListener('click',openHist);
+document.getElementById('btnHistClose').addEventListener('click',()=>{histEl.hidden=true});
+function renderHistList(){
+  const h=loadHist(); const groups={};
+  h.forEach(e=>{(groups[e.code]=groups[e.code]||[]).push(e)});
+  let codes=Object.keys(groups).sort((a,b)=>{const la=groups[a].map(e=>e.savedAt).sort().pop(),lb=groups[b].map(e=>e.savedAt).sort().pop();return lb.localeCompare(la)});
+  const f=histFilter.trim().toUpperCase(); if(f) codes=codes.filter(c=>c.includes(f));
+  let html=`<div class="row" style="flex-wrap:wrap"><button type="button" class="btn small" data-h="backup">Sauvegarder l'historique</button><button type="button" class="btn small" data-h="restore">Restaurer un fichier</button></div>
+  <p class="hint">Fais une sauvegarde régulière et range-la avec tes dossiers patients. Si l'iPhone est perdu ou réinitialisé, l'historique disparaît avec lui.</p>
+  <input type="search" id="histSearch" placeholder="Chercher un code patient" value="${esc(histFilter)}" autocapitalize="characters">`;
+  if(!h.length) html+=`<div class="empty">Aucun bilan enregistré. Remplis un bilan avec un code patient, puis touche « Enregistrer ».</div>`;
+  else if(!codes.length) html+=`<div class="empty">Aucun code ne correspond.</div>`;
+  codes.forEach(c=>{
+    const list=groups[c].slice().sort(sortEntries);
+    html+=`<div class="group"><div class="gh"><b>${esc(c)}</b><div class="acts" style="display:flex;gap:6px">${list.length>1?`<button type="button" class="btn small" data-h="cmp" data-code="${esc(c)}">Comparer</button>`:''}<button type="button" class="btn small" data-h="next" data-code="${esc(c)}">+ Bilan</button></div></div>`;
+    list.forEach(e=>{
+      html+=`<div class="entry"><div class="when">${fmtDate(e.date)||'Sans date'}<small>${esc(e.type||'Type non précisé')}${S._hid===e.id?' · ouvert':''}</small></div><div class="acts"><button type="button" class="btn small" data-h="open" data-id="${e.id}">Ouvrir</button><button type="button" class="btn small${delArm===e.id?' danger':''}" data-h="del" data-id="${e.id}">${delArm===e.id?'Confirmer':'Supprimer'}</button></div></div>`;
+    });
+    html+=`</div>`;
+  });
+  histBody.innerHTML=html;
+  const s=document.getElementById('histSearch'); s.addEventListener('input',()=>{histFilter=s.value;const pos=s.selectionStart;renderHistList();const n=document.getElementById('histSearch');n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}});
+}
+function renderCompare(code,aId,bId){
+  const list=loadHist().filter(e=>e.code===code).sort(sortEntries);
+  if(list.length<2){renderHistList();return}
+  const A=list.find(e=>e.id===aId)||list.find(e=>e.data&&e.data.type==='Initial')||list[0];
+  const B=list.find(e=>e.id===bId)||list[list.length-1];
+  const opt=(sel)=>list.map(e=>`<option value="${e.id}" ${e.id===sel?'selected':''}>${fmtDate(e.date)} · ${esc(e.type||'?')}</option>`).join('');
+  const rows=compareRows(A.data||{},B.data||{});
+  histBody.innerHTML=`<button type="button" class="btn small" data-h="back" style="align-self:flex-start">‹ Retour</button>
+   <h3 style="margin-top:8px">${esc(code)}</h3>
+   <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap;font-size:14px"><span>Avant</span><select id="cmpA" class="btn small">${opt(A.id)}</select><span>Maintenant</span><select id="cmpB" class="btn small">${opt(B.id)}</select></div>
+   ${rows.length?`<div style="overflow-x:auto;margin-top:8px">${cmpTableHTML(rows,false)}</div>`:'<div class="empty">Aucune mesure en commun entre ces deux bilans.</div>'}
+   <p class="hint" style="margin-top:8px">Les mouvements sont rapprochés par leur nom et leur côté : garde le même intitulé d'un bilan à l'autre.</p>`;
+  const re=()=>renderCompare(code,document.getElementById('cmpA').value,document.getElementById('cmpB').value);
+  document.getElementById('cmpA').addEventListener('change',re);document.getElementById('cmpB').addEventListener('change',re);
+}
+histBody.addEventListener('click',e=>{
+  const b=e.target.closest('button[data-h]'); if(!b) return;
+  const a=b.dataset.h;
+  if(a==='back'){renderHistList();return}
+  if(a==='cmp'){renderCompare(b.dataset.code);return}
+  if(a==='del'){
+    if(delArm!==b.dataset.id){delArm=b.dataset.id;renderHistList();return}
+    const h=loadHist().filter(x=>x.id!==b.dataset.id); saveHist(h);
+    if(S._hid===b.dataset.id){delete S._hid;changed()}
+    delArm=null; renderHistList(); toast('Bilan supprimé de l\'historique.'); return;
+  }
+  if(a==='open'){
+    const en=loadHist().find(x=>x.id===b.dataset.id); if(!en) return;
+    S=JSON.parse(JSON.stringify(en.data||{})); S._hid=en.id; fillForm(); saveDraft();
+    histEl.hidden=true; window.scrollTo(0,0); toast(`Bilan ${en.code} du ${fmtDate(en.date)} ouvert.`); return;
+  }
+  if(a==='next'){
+    const list=loadHist().filter(x=>x.code===b.dataset.code).sort(sortEntries); const last=list[list.length-1]; if(!last) return;
+    const p=last.data||{}; const keep=['code','age','profession','poids','taille','lateralite','sport','medicaments','atcd_fam','ord_date','prescripteur','motif','nb_seances','frequence','premiere_seance','bilan_initial','premiere_ord','premiere_ord_date','examens','atcd'];
+    const n={date:today()}; keep.forEach(k=>{if(p[k]!=null)n[k]=JSON.parse(JSON.stringify(p[k]))});
+    if(!n.bilan_initial){const ini=list.find(x=>x.data&&x.data.type==='Initial')||list[0]; if(ini&&ini.date) n.bilan_initial=ini.date}
+    n.articulaire=(p.articulaire||[]).filter(r=>r&&r.mvt).map(r=>Object.assign(newArt(),{mvt:r.mvt,cote:r.cote}));
+    n.musculaire=(p.musculaire||[]).filter(r=>r&&r[0]).map(r=>[r[0],'']);
+    n.perimetrie=(p.perimetrie||[]).filter(r=>r&&r[0]).map(r=>[r[0],'','']);
+    S=n; fillForm(); saveDraft(); histEl.hidden=true; window.scrollTo(0,0);
+    toast(`Nouveau bilan pour ${b.dataset.code} : patient, ordonnance et liste des mesures repris.`); return;
+  }
+  if(a==='backup'){backup();return}
+  if(a==='restore'){document.getElementById('importFile').click();return}
+});
+
+async function backup(){
+  const h=loadHist(); if(!h.length){toast('Rien à sauvegarder.');return}
+  const data=JSON.stringify({app:'bilan-kine',version:1,exportedAt:new Date().toISOString(),entries:h},null,1);
+  const name=`bilans-sauvegarde-${today()}.json`;
+  try{
+    const file=new File([data],name,{type:'application/json'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Sauvegarde des bilans'});return}
+  }catch(e){if(e&&e.name==='AbortError')return}
+  const url=URL.createObjectURL(new Blob([data],{type:'application/json'}));
+  const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+}
+document.getElementById('importFile').addEventListener('change',e=>{
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const j=JSON.parse(r.result); const inc=Array.isArray(j)?j:j.entries; if(!Array.isArray(inc)) throw 0;
+      const h=loadHist(); let add=0,upd=0;
+      inc.forEach(x=>{ if(!x||!x.id||!x.data) return; const i=h.findIndex(y=>y.id===x.id); if(i<0){h.push(x);add++} else if((x.savedAt||'')>(h[i].savedAt||'')){h[i]=x;upd++} });
+      saveHist(h); renderHistList(); toast(`Restauré : ${add} bilan(s) ajouté(s), ${upd} mis à jour.`);
+    }catch(err){toast('Ce fichier n\'est pas une sauvegarde de bilans.')}
+    e.target.value='';
+  };
+  r.readAsText(f);
+});
+
+/* ---------- Impression ---------- */
+const printSheet=document.getElementById('printSheet'), printEl=document.getElementById('print'), nomEl=document.getElementById('nom');
+const evoWrap=document.getElementById('evoWrap'), evoTxt=document.getElementById('evoTxt'), saveWrap=document.getElementById('saveWrap'), printMsg=document.getElementById('printMsg');
+let prevForPrint=null;
+document.getElementById('btnPrint').addEventListener('click',()=>{
+  const code=normCode(S.code);
+  prevForPrint=code?previousFor(code,S._hid,S.date):null;
+  evoWrap.hidden=!prevForPrint;
+  if(prevForPrint) evoTxt.textContent=`Ajouter l'évolution depuis le bilan du ${fmtDate(prevForPrint.date)}${prevForPrint.type?' ('+prevForPrint.type.toLowerCase()+')':''}`;
+  saveWrap.hidden=!code; printMsg.hidden=true;
+  printSheet.hidden=false; setTimeout(()=>nomEl.focus(),50);
+});
+document.getElementById('btnPrintCancel').addEventListener('click',()=>{printSheet.hidden=true});
+printSheet.addEventListener('click',e=>{if(e.target===printSheet)printSheet.hidden=true});
+
+function reportHTML(nom,withEvo){
+  const lines=String(HEADER).split('\n').filter(x=>x.trim());
+  const meta=[S.type?'Bilan '+String(S.type).toLowerCase():'',fmtDate(S.date)].filter(Boolean).join(' · ');
+  let h=`<div class="rp-head"><div class="rp-cab">${lines.length?lines.map((l,i)=>i===0?`<b>${esc(l)}</b>`:esc(l)).join('\n'):''}</div><div class="rp-title"><b>Bilan diagnostic kinésithérapique</b><span>${esc(meta)}</span></div></div>`;
+  h+=`<div class="rp-pat"><div>Patient : ${esc(nom)}</div>${S.code?`<span>Code ${esc(normCode(S.code))}</span>`:''}</div>`;
+  SECTIONS.filter(s=>s.pdf!==false).forEach(s=>{
+    const bl=blocksFor(s,S); if(!bl.length) return;
+    h+=`<h4>${esc(s.title)}</h4>`;
+    bl.forEach(b=>{
+      if(b.kind==='inline') h+=`<p>${b.pairs.map(([l,v])=>`<b>${esc(l)} :</b> ${esc(v)}`).join('<span class="sep">·</span>')}</p>`;
+      else if(b.kind==='para') h+=`<p><b>${esc(b.label)} :</b> <span class="${b.red?'redf':''}">${esc(b.val)}</span></p>`;
+      else h+=`<div class="tl">${esc(b.label)}</div><table><colgroup>${b.w.map(w=>`<col style="width:${w}%">`).join('')}</colgroup><thead><tr>${b.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.map(r=>`<tr>${b.cols.map((c,i)=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    });
+  });
+  if(withEvo&&prevForPrint){
+    const rows=compareRows(prevForPrint.data||{},S);
+    if(rows.length) h+=`<h4>Évolution depuis le bilan du ${esc(fmtDate(prevForPrint.date))}</h4>`+cmpTableHTML(rows,true).replace(/class="trend (up|down|eq)?"/g,(m,c)=>c&&c!=='eq'?`class="${c}"`:'');
+  }
+  return h;
+}
+const PAGE_H_PX=(297-22)*96/25.4;
+function fitReport(nom,withEvo){
+  printEl.innerHTML=`<div class="rp" id="rp">${reportHTML(nom,withEvo)}</div>`;
+  const rp=document.getElementById('rp');
+  printEl.style.cssText='display:block;position:absolute;left:-10000px;top:0;visibility:hidden';
+  let used=10;
+  for(const fs of [10,9.5,9,8.5,8,7.5,7]){
+    rp.style.fontSize=fs+'pt'; used=fs;
+    if(rp.scrollHeight<=PAGE_H_PX*2*0.94) break;
+  }
+  const pages=Math.ceil(rp.scrollHeight/(PAGE_H_PX*0.97));
+  printEl.style.cssText='';
+  return {fs:used,pages};
+}
+document.getElementById('btnPrintGo').addEventListener('click',()=>{
+  const nom=nomEl.value.trim();
+  if(!saveWrap.hidden&&document.getElementById('alsoSave').checked) saveToHistory(true);
+  const r=fitReport(nom,!evoWrap.hidden&&document.getElementById('evo').checked);
+  if(r.pages>2){printMsg.textContent=`Le bilan dépasse 2 pages même en petit (environ ${r.pages}). Il s'imprimera quand même ; raccourcis les champs longs pour tenir sur 2.`;printMsg.className='msg err';printMsg.hidden=false}
+  printSheet.hidden=true;
+  setTimeout(()=>{window.print()},60);
+});
+window.addEventListener('afterprint',()=>{setTimeout(()=>{printEl.innerHTML='';nomEl.value=''},500)});
+
+/* ---------- Nouveau ---------- */
+const confirmNew=document.getElementById('confirmNew');
+document.getElementById('btnNew').addEventListener('click',()=>{
+  document.getElementById('newHint').textContent=S._hid?'Le formulaire sera vidé. Pense à « Enregistrer » avant si tu as modifié ce bilan : sinon les modifications seront perdues. L\'historique n\'est pas touché.':'Le formulaire sera vidé. Si ce bilan n\'est pas enregistré dans l\'historique, il sera perdu.';
+  confirmNew.hidden=false;
+});
+document.getElementById('btnNewCancel').addEventListener('click',()=>{confirmNew.hidden=true});
+document.getElementById('btnNewOk').addEventListener('click',()=>{S={date:today()};lsSet(KEY,JSON.stringify(S));nomEl.value='';fillForm();confirmNew.hidden=true;window.scrollTo(0,0)});
+confirmNew.addEventListener('click',e=>{if(e.target===confirmNew)confirmNew.hidden=true});
+
+/* ---------- Hors connexion ---------- */
+if('serviceWorker' in navigator && location.protocol==='https:'){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+window.__bdk={S:()=>S,fitReport,reportHTML,compareRows};
+})();
+</script>
+</body>
+</html>
