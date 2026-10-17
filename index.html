@@ -87,6 +87,13 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .tcard .chip{background:var(--surface);padding:6px 12px;min-height:34px;font-size:14px}
 .tcard .chip.pos[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
 .tcard .gap{width:8px}
+.lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
+.ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:14px 0 2px}
+.nrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.ncells{display:flex;gap:6px;flex:none}
+.ncyc{font:inherit;font-size:13px;min-width:92px;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:8px;padding:7px 8px;min-height:36px;cursor:pointer}
+.ncyc.on{border-color:var(--accent);color:var(--ink);background:var(--accent-soft);font-weight:600}
+.nrow input{width:64px;min-height:36px;padding:6px;text-align:center;font-size:16px}
 .tcard input{background:var(--surface)}
 .regions{margin-bottom:10px}
 .regions .chip{font-size:13.5px;padding:6px 11px;min-height:34px}
@@ -274,7 +281,8 @@ const SECTIONS=[
   {k:'perimetrie',l:'Périmétrie',t:'table',cols:['Repère','Atteint','Sain'],w:[.5,.25,.25]},
   {k:'articulaire',l:'Bilan articulaire (quantité et qualité)',pl:'Bilan articulaire',t:'artic'},
   {k:'musculaire',l:'Bilan musculaire (force)',t:'table',cols:['Groupe musculaire / contraction','Cotation'],w:[.75,.25]},
-  {k:'sensibilite',l:'Sensibilité / examen neurologique (réflexes, dermatomes)',pl:'Sensibilité / neuro',t:'area'},
+  {k:'neuro',l:'Examen neurologique',pl:'Examen neurologique',t:'neuro'},
+  {k:'sensibilite',l:'Autres remarques neurologiques',pl:'Remarques neuro',t:'area'},
   {k:'tspec',l:'Tests spécifiques',t:'tests'},
   {k:'tests',l:'Autres tests / remarques',t:'area'},
   {k:'aide',l:'Aide à la locomotion',t:'radio',o:['Aucune','1 canne','2 cannes','Déambulateur','Fauteuil']},
@@ -306,7 +314,7 @@ const MVTS=['Épaule flexion','Épaule extension','Épaule abduction','Épaule r
 const QTY=['Complète','Légère','Modérée','Sévère','Nulle'];
 const QUAL=['Fluide','Douloureux','Arc douloureux','Compensations','Raideur','Crépitations','Appréhension'];
 const FIN=['Normale','Ferme','Dure','Molle','Vide (douleur)'];
-const REGIONS=['Lombaire / bassin','Cervical','Épaule','Hanche','Genou','Cheville','Fonctionnel'];
+const REGIONS=['Lombaire / bassin','Cervical','Épaule','Défilé thoraco-brachial','Hanche','Genou','Cheville','Fonctionnel'];
 const TESTS=[
  {r:'Lombaire / bassin',id:'lasegue',n:'Lasègue',d:"Décubitus dorsal, élévation passive de la jambe tendue. Positif si douleur radiculaire irradiant sous le genou entre 30° et 70°."},
  {r:'Lombaire / bassin',id:'lasegue_x',n:'Lasègue croisé',d:"Même manœuvre sur la jambe saine. Positif si la douleur est reproduite du côté atteint. Très spécifique d'une hernie discale."},
@@ -315,7 +323,13 @@ const TESTS=[
  {r:'Lombaire / bassin',id:'faber',n:'FABER (Patrick)',d:"Décubitus dorsal, talon sur le genou opposé (flexion, abduction, rotation externe), pression sur le genou. Douleur inguinale : hanche. Douleur fessière postérieure : sacro-iliaque."},
  {r:'Cervical',id:'spurling',n:'Spurling',d:"Extension, inclinaison et rotation de la tête vers le côté atteint, puis compression axiale douce. Positif si douleur radiculaire dans le membre supérieur."},
  {r:'Cervical',id:'distraction',n:'Distraction cervicale',d:"Traction axiale douce de la tête. Positif si les symptômes radiculaires diminuent."},
- {r:'Cervical',id:'ultt1',n:'ULTT1 (médian)',d:"Abaissement de l'épaule, abduction 90-110°, rotation externe, supination, extension poignet et doigts, puis extension du coude. Positif si les symptômes sont reproduits et modifiés par l'inclinaison cervicale."},
+ {r:'Cervical',id:'ultt1',n:'ULNT1 (médian)',d:"Abaissement de l'épaule, abduction 90-110°, rotation externe, supination, extension poignet et doigts, puis extension du coude. Positif si les symptômes sont reproduits et modifiés par l'inclinaison cervicale."},
+ {r:'Cervical',id:'ulnt2b',n:'ULNT2b (radial)',d:"Décubitus dorsal. Abaissement du moignon de l'épaule, coude en extension, rotation interne de tout le bras (avant-bras en pronation), poignet, doigts et pouce en flexion, puis légère abduction de l'épaule. Positif si les symptômes sont reproduits sur le territoire du nerf radial et modifiés par l'inclinaison cervicale."},
+ {r:'Cervical',id:'ulnt3',n:'ULNT3 (cubital)',d:"Décubitus dorsal. Poignet et doigts en extension, avant-bras en pronation, coude en flexion complète, abaissement du moignon de l'épaule, rotation externe puis abduction de l'épaule (la main vient vers l'oreille). Positif si les symptômes sont reproduits sur le territoire du nerf cubital (bord ulnaire, 4e et 5e doigts)."},
+ {r:'Défilé thoraco-brachial',id:'adson',n:'Adson',pouls:1,d:"Assis, pouls radial palpé, bras légèrement en abduction et extension. Le patient tourne la tête vers le côté testé, met le cou en extension et bloque une inspiration profonde. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
+ {r:'Défilé thoraco-brachial',id:'eden',n:'Eden',pouls:1,d:"Assis, pouls radial palpé. Épaules tirées vers l'arrière et vers le bas, poitrine en avant (position « garde-à-vous »). Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits : compression costo-claviculaire."},
+ {r:'Défilé thoraco-brachial',id:'roos',n:'Roos (EAST)',d:"Abduction à 90°, coude à 90°, rotation externe. Ouvrir et fermer les mains pendant 3 minutes. Positif si la lourdeur, la douleur ou les fourmillements sont reproduits et deviennent insupportables."},
+ {r:'Défilé thoraco-brachial',id:'wright',n:'Wright (hyperabduction)',pouls:1,d:"Assis, pouls radial palpé. Bras amené en hyperabduction (vers 180°) avec rotation externe. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
  {r:'Épaule',id:'hawkins',n:'Hawkins-Kennedy',d:"Flexion d'épaule à 90°, coude à 90°, rotation interne passive forcée. Positif si douleur : conflit sous-acromial."},
  {r:'Épaule',id:'neer',n:'Neer',d:"Omoplate stabilisée, élévation passive du bras en rotation interne. Positif si douleur antéro-supérieure : conflit sous-acromial."},
  {r:'Épaule',id:'jobe',n:'Jobe',d:"Bras à 90° d'abduction dans le plan de l'omoplate, pouces vers le bas, résistance vers le bas. Douleur ou faiblesse : supra-épineux."},
@@ -343,6 +357,15 @@ const TESTS=[
 const TBYID={}; TESTS.forEach(t=>TBYID[t.id]=t);
 const newArt=()=>({mvt:'',cote:'',pq:'',pdeg:'',aq:'',adeg:'',sain:'',qual:[],fin:''});
 const artFilled=a=>!!(a&&(a.mvt||a.cote||a.pq||a.aq||a.pdeg||a.adeg||a.sain||(a.qual&&a.qual.length)||a.fin));
+const NEURO={
+ reflexes:[['bic','Bicipital (C5-C6)'],['srad','Stylo-radial (C6)'],['tric','Tricipital (C7)'],['rot','Rotulien (L4)'],['ach','Achilléen (S1)']],
+ reflexStates:['','Abolis','Diminué','Normal','Vif','Diffusé'],
+ derm:[['C5','C5'],['C6','C6'],['C7','C7'],['C8','C8'],['T1','T1'],['L2','L2'],['L3','L3'],['L4','L4'],['L5','L5'],['S1','S1'],['S2','S2']],
+ dermStates:['','Normal','Diminué','Absent','Douloureux'],
+ myo:[['C5','C5 · deltoïde'],['C6','C6 · extenseurs du poignet'],['C7','C7 · triceps'],['C8','C8 · fléchisseurs des doigts'],['T1','T1 · interosseux'],['L2','L2 · psoas'],['L3','L3 · quadriceps'],['L4','L4 · tibial antérieur'],['L5',"L5 · extenseur de l'hallux"],['S1','S1 · gastrocnémien']],
+ pyr:[['babinski','Babinski'],['hoffmann','Hoffmann (membre sup.)'],['clonus_r','Clonus rotulien'],['clonus_a','Clonus achilléen']],
+ pyrStates:['','Positif','Négatif']
+};
 let REGION=null; const OPEN=new Set();
 
 /* ---------- Stockage ---------- */
@@ -381,6 +404,9 @@ function fieldHTML(f){
   } else if(f.t==='artic'){
     useLabel=false;
     inner=`<div id="artic-box"></div><button type="button" class="addrow" data-aadd="1">+ Ajouter un mouvement</button><datalist id="mvts">${MVTS.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`;
+  } else if(f.t==='neuro'){
+    useLabel=false;
+    inner='<div id="neuro-box"></div>';
   } else if(f.t==='tests'){
     useLabel=false;
     inner=`<p class="hint">Touche un test pour voir comment le réaliser et noter le résultat.</p><div class="chips regions" id="regions"></div><div class="tchips" id="tests-box"></div>`;
@@ -420,7 +446,7 @@ function renderArtic(){
   </div>`).join('')+`<p class="scale">Limitation : légère &lt; 25 %, modérée 25 à 50 %, sévère &gt; 50 % de l'amplitude attendue, nulle = mouvement impossible.</p>`;
 }
 const tState=id=>(S.tspec&&S.tspec[id])||{};
-const tDoneIn=(st,id)=>{const t=(st&&st[id])||{};return !!(t.res||t.cote||(t.note&&String(t.note).trim()))};
+const tDoneIn=(st,id)=>{const t=(st&&st[id])||{};return !!(t.res||t.cote||t.pouls||(t.note&&String(t.note).trim()))};
 const tDone=id=>tDoneIn(S.tspec,id);
 const resCls=v=>(v==='Positif'||v==='Anormal')?'pos':(v==='Négatif'||v==='Normal')?'neg':'dbt';
 function renderTests(){
@@ -434,10 +460,27 @@ function renderTests(){
     let h=`<button type="button" class="chip" data-topen="${t.id}" aria-expanded="${open}">${esc(t.n)}${s.res?`<span class="dot ${resCls(s.res)}"></span>`:''}</button>`;
     if(open){
       const res=t.m?['Normal','Anormal']:['Positif','Négatif','Douteux'];
-      h+=`<div class="tcard"><p>${esc(t.d)}</p><div class="row2">${['G','D'].map(c=>`<button type="button" class="chip" data-tset="cote" data-t="${t.id}" data-v="${c}" aria-pressed="${s.cote===c}">${c}</button>`).join('')}<span class="gap"></span>${res.map(v=>`<button type="button" class="chip${resCls(v)==='pos'?' pos':''}" data-tset="res" data-t="${t.id}" data-v="${v}" aria-pressed="${s.res===v}">${v}</button>`).join('')}</div><input type="text" id="tn-${t.id}" data-tnote="${t.id}" value="${esc(s.note||'')}" placeholder="${t.m?'Temps / mesure':'Précisions (angle, douleur…)'}" aria-label="Précisions ${esc(t.n)}"></div>`;
+      h+=`<div class="tcard"><p>${esc(t.d)}</p><div class="row2">${['G','D'].map(c=>`<button type="button" class="chip" data-tset="cote" data-t="${t.id}" data-v="${c}" aria-pressed="${s.cote===c}">${c}</button>`).join('')}<span class="gap"></span>${res.map(v=>`<button type="button" class="chip${resCls(v)==='pos'?' pos':''}" data-tset="res" data-t="${t.id}" data-v="${v}" aria-pressed="${s.res===v}">${v}</button>`).join('')}</div>${t.pouls?`<div class="row2"><span class="lbl2">Pouls radial</span>${['Présent','Diminué','Aboli'].map(v=>`<button type="button" class="chip${v!=='Présent'?' pos':''}" data-tset="pouls" data-t="${t.id}" data-v="${v}" aria-pressed="${s.pouls===v}">${v}</button>`).join('')}</div>`:''}<input type="text" id="tn-${t.id}" data-tnote="${t.id}" value="${esc(s.note||'')}" placeholder="${t.m?'Temps / mesure':'Précisions (angle, douleur…)'}" aria-label="Précisions ${esc(t.n)}"></div>`;
     }
     return h;
   }).join('');
+}
+
+
+function neuroFilled(o){return !!o&&typeof o==='object'?Object.values(o).some(neuroFilled):!!o}
+function nget(cat,key,side){return (S.neuro&&S.neuro[cat]&&S.neuro[cat][key]&&S.neuro[cat][key][side])||''}
+function nSet(cat,key,side,v){S.neuro=S.neuro||{};S.neuro[cat]=S.neuro[cat]||{};S.neuro[cat][key]=S.neuro[cat][key]||{};S.neuro[cat][key][side]=v}
+function cycNext(list,cur){const i=list.indexOf(cur||'');return list[(i+1)%list.length]}
+function ncyc(cat,key,side){const v=nget(cat,key,side);return `<button type="button" class="ncyc${v?' on':''}" data-ncat="${cat}" data-nkey="${key}" data-nside="${side}" aria-label="${side==='D'?'Droite':'Gauche'} ${key} : ${v||'non renseigné'}">${side} : ${v||'–'}</button>`}
+function renderNeuro(){
+  const box=document.getElementById('neuro-box'); if(!box) return;
+  const row=(lab,cells)=>`<div class="nrow"><span>${lab}</span><div class="ncells">${cells}</div></div>`;
+  let h='<p class="hint">Touche une case pour faire défiler les états. Vide = non examiné.</p>';
+  h+='<div class="ntitle">Réflexes</div>'+NEURO.reflexes.map(([k,l])=>row(l,ncyc('reflexes',k,'D')+ncyc('reflexes',k,'G'))).join('');
+  h+='<div class="ntitle">Sensibilité (dermatomes)</div>'+NEURO.derm.map(([k,l])=>row(l,ncyc('derm',k,'D')+ncyc('derm',k,'G'))).join('');
+  h+='<div class="ntitle">Force (myotomes, cotée sur 5)</div>'+NEURO.myo.map(([k,l])=>row(l,['D','G'].map(sd=>`<input type="text" inputmode="numeric" data-nin="myo" data-nkey="${k}" data-nside="${sd}" placeholder="${sd}" value="${esc(nget('myo',k,sd))}" aria-label="Myotome ${l}, ${sd==='D'?'droite':'gauche'}">`).join(''))).join('');
+  h+='<div class="ntitle">Signes pyramidaux et clonus</div>'+NEURO.pyr.map(([k,l])=>row(l,ncyc('pyr',k,'D')+ncyc('pyr',k,'G'))).join('');
+  box.innerHTML=h;
 }
 
 function syncButtons(k){
@@ -454,6 +497,7 @@ function filled(f){
   if(f.t==='table') return Array.isArray(v)&&v.some(r=>r.some(c=>c&&String(c).trim()));
   if(f.t==='artic') return Array.isArray(v)&&v.some(artFilled);
   if(f.t==='tests') return !!v&&Object.keys(v).some(tDone);
+  if(f.t==='neuro') return neuroFilled(v);
   if(Array.isArray(v)) return v.length>0;
   return v!=null&&String(v).trim()!=='';
 }
@@ -480,10 +524,12 @@ form.addEventListener('input',e=>{
   if(t.dataset.k){ if(t.dataset.k==='_entete') HEADER=t.value; else S[t.dataset.k]=t.value; if(t.tagName==='TEXTAREA') autosize(t); changed(); }
   else if(t.dataset.tk){ S[t.dataset.tk][+t.dataset.r][+t.dataset.c]=t.value; changed(); }
   else if(t.dataset.ain){ artRows()[+t.dataset.r][t.dataset.ain]=t.value; changed(); }
+  else if(t.dataset.nin){ nSet('myo',t.dataset.nkey,t.dataset.nside,t.value); changed(); }
   else if(t.dataset.tnote){ S.tspec=S.tspec||{}; (S.tspec[t.dataset.tnote]=S.tspec[t.dataset.tnote]||{}).note=t.value; changed(); }
 });
 form.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.ncat){const L={reflexes:NEURO.reflexStates,derm:NEURO.dermStates,pyr:NEURO.pyrStates}[b.dataset.ncat];nSet(b.dataset.ncat,b.dataset.nkey,b.dataset.nside,cycNext(L,nget(b.dataset.ncat,b.dataset.nkey,b.dataset.nside)));renderNeuro();changed();return}
   if(b.dataset.region){REGION=b.dataset.region;renderTests();return}
   if(b.dataset.topen){const id=b.dataset.topen;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderTests();return}
   if(b.dataset.tset){const id=b.dataset.t,fl=b.dataset.tset,v=b.dataset.v;S.tspec=S.tspec||{};const s=S.tspec[id]=S.tspec[id]||{};s[fl]=s[fl]===v?'':v;renderTests();changed();return}
@@ -513,7 +559,7 @@ function fillForm(){
     if(f.t==='table') document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f);
     if(['radio','chips','eva'].includes(f.t)) syncButtons(f.k);
   }));
-  OPEN.clear(); REGION=null; renderArtic(); renderTests(); refresh();
+  OPEN.clear(); REGION=null; renderArtic(); renderTests(); renderNeuro(); refresh();
 }
 fillForm();
 window.addEventListener('resize',()=>form.querySelectorAll('textarea').forEach(autosize));
@@ -549,8 +595,14 @@ function blocksFor(s,d){
       if(rows.length){flush();out.push({kind:'table',label,cols:['Mouvement','Passif','Actif','Sain','Qualité / fin de course'],w:[25,18,18,9,30],rows})}
       return;
     }
+    if(f.t==='neuro'){
+      const pick=(cat,list)=>list.filter(([k])=>nget(cat,k,'D')||nget(cat,k,'G')).map(([k,l])=>[l,nget(cat,k,'D'),nget(cat,k,'G')]);
+      [['Réflexes',pick('reflexes',NEURO.reflexes)],['Sensibilité',pick('derm',NEURO.derm)],['Myotomes',pick('myo',NEURO.myo)],['Signes pyramidaux et clonus',pick('pyr',NEURO.pyr)]]
+        .forEach(([g,rows])=>{if(rows.length){flush();out.push({kind:'table',label:g,cols:['Élément','D','G'],w:[60,20,20],rows})}});
+      return;
+    }
     if(f.t==='tests'){
-      const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',s.note||'']});
+      const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',[s.pouls?'pouls radial : '+s.pouls:'',s.note||''].filter(Boolean).join(' · ')]});
       if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows})}
       return;
     }
@@ -623,7 +675,7 @@ function compareRows(A,B){ // A = avant, B = maintenant
   TESTS.forEach(t=>{
     const a=(A.tspec||{})[t.id]||{}, b=(B.tspec||{})[t.id]||{};
     if(!tDoneIn(B.tspec,t.id)) return;
-    const fa=[a.res,a.note].filter(Boolean).join(', '), fb=[b.res,b.note].filter(Boolean).join(', ');
+    const fa=[a.res,a.pouls?'pouls '+a.pouls:'',a.note].filter(Boolean).join(', '), fb=[b.res,b.pouls?'pouls '+b.pouls:'',b.note].filter(Boolean).join(', ');
     const good=v=>v==='Négatif'||v==='Normal', bad=v=>v==='Positif'||v==='Anormal';
     const tr=(bad(a.res)&&good(b.res))?'up':(good(a.res)&&bad(b.res))?'down':(a.res&&a.res===b.res)?'eq':'';
     add('Tests',t.n+(b.cote?' ('+b.cote+')':''),fa,fb,tr);

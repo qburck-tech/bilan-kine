@@ -1,6 +1,6 @@
 // Met l'appli en cache pour qu'elle marche hors connexion.
 // Aucune donnée de bilan ne passe ici : elles restent dans le stockage local de l'iPhone.
-const CACHE = 'bilan-kine-v2';
+const CACHE = 'bilan-kine-v3';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
