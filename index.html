@@ -88,7 +88,10 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .tcard .chip.pos[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
 .tcard .gap{width:8px}
 .lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
-.ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:14px 0 2px}
+.ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:0 0 2px}
+.npanel{border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
+.ncount{display:inline-block;min-width:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--accent);color:var(--accent-ink);font-size:11.5px;font-weight:700;text-align:center}
+.chip[aria-pressed="true"] .ncount{background:var(--accent-ink);color:var(--accent)}
 .nrow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14.5px}
 .ncells{display:flex;gap:6px;flex:none}
 .ncyc{font:inherit;font-size:13px;min-width:92px;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:8px;padding:7px 8px;min-height:36px;cursor:pointer}
@@ -472,14 +475,21 @@ function nget(cat,key,side){return (S.neuro&&S.neuro[cat]&&S.neuro[cat][key]&&S.
 function nSet(cat,key,side,v){S.neuro=S.neuro||{};S.neuro[cat]=S.neuro[cat]||{};S.neuro[cat][key]=S.neuro[cat][key]||{};S.neuro[cat][key][side]=v}
 function cycNext(list,cur){const i=list.indexOf(cur||'');return list[(i+1)%list.length]}
 function ncyc(cat,key,side){const v=nget(cat,key,side);return `<button type="button" class="ncyc${v?' on':''}" data-ncat="${cat}" data-nkey="${key}" data-nside="${side}" aria-label="${side==='D'?'Droite':'Gauche'} ${key} : ${v||'non renseigné'}">${side} : ${v||'–'}</button>`}
+const NCATS=[['reflexes','Réflexes'],['derm','Sensibilité'],['myo','Myotomes'],['pyr','Signes pyramidaux']];
+const NOPEN=new Set();
+function nCount(cat){const o=(S.neuro&&S.neuro[cat])||{};return Object.values(o).filter(v=>v&&(v.D||v.G)).length}
 function renderNeuro(){
   const box=document.getElementById('neuro-box'); if(!box) return;
   const row=(lab,cells)=>`<div class="nrow"><span>${lab}</span><div class="ncells">${cells}</div></div>`;
-  let h='<p class="hint">Touche une case pour faire défiler les états. Vide = non examiné.</p>';
-  h+='<div class="ntitle">Réflexes</div>'+NEURO.reflexes.map(([k,l])=>row(l,ncyc('reflexes',k,'D')+ncyc('reflexes',k,'G'))).join('');
-  h+='<div class="ntitle">Sensibilité (dermatomes)</div>'+NEURO.derm.map(([k,l])=>row(l,ncyc('derm',k,'D')+ncyc('derm',k,'G'))).join('');
-  h+='<div class="ntitle">Force (myotomes, cotée sur 5)</div>'+NEURO.myo.map(([k,l])=>row(l,['D','G'].map(sd=>`<input type="text" inputmode="numeric" data-nin="myo" data-nkey="${k}" data-nside="${sd}" placeholder="${sd}" value="${esc(nget('myo',k,sd))}" aria-label="Myotome ${l}, ${sd==='D'?'droite':'gauche'}">`).join(''))).join('');
-  h+='<div class="ntitle">Signes pyramidaux et clonus</div>'+NEURO.pyr.map(([k,l])=>row(l,ncyc('pyr',k,'D')+ncyc('pyr',k,'G'))).join('');
+  const body={
+    reflexes:()=>NEURO.reflexes.map(([k,l])=>row(l,ncyc('reflexes',k,'D')+ncyc('reflexes',k,'G'))).join(''),
+    derm:()=>NEURO.derm.map(([k,l])=>row(l,ncyc('derm',k,'D')+ncyc('derm',k,'G'))).join(''),
+    myo:()=>'<p class="hint">Cotation de 0 à 5.</p>'+NEURO.myo.map(([k,l])=>row(l,['D','G'].map(sd=>`<input type="text" inputmode="numeric" data-nin="myo" data-nkey="${k}" data-nside="${sd}" placeholder="${sd}" value="${esc(nget('myo',k,sd))}" aria-label="Myotome ${l}, ${sd==='D'?'droite':'gauche'}">`).join(''))).join(''),
+    pyr:()=>NEURO.pyr.map(([k,l])=>row(l,ncyc('pyr',k,'D')+ncyc('pyr',k,'G'))).join('')
+  };
+  let h='<p class="hint">Touche une bulle pour l\'ouvrir. Dans chaque case, touche pour faire défiler les états ; vide = non examiné.</p><div class="chips regions">';
+  h+=NCATS.map(([c,l])=>{const open=NOPEN.has(c),n=nCount(c);return `<button type="button" class="chip" data-nopen="${c}" aria-expanded="${open}" aria-pressed="${open}">${l}${n?` <span class="ncount">${n}</span>`:''}</button>`}).join('')+'</div>';
+  NCATS.forEach(([c,l])=>{if(NOPEN.has(c))h+=`<div class="npanel"><div class="ntitle">${l}</div>${body[c]()}</div>`});
   box.innerHTML=h;
 }
 
@@ -529,6 +539,7 @@ form.addEventListener('input',e=>{
 });
 form.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.nopen){const c=b.dataset.nopen;if(NOPEN.has(c))NOPEN.delete(c);else NOPEN.add(c);renderNeuro();return}
   if(b.dataset.ncat){const L={reflexes:NEURO.reflexStates,derm:NEURO.dermStates,pyr:NEURO.pyrStates}[b.dataset.ncat];nSet(b.dataset.ncat,b.dataset.nkey,b.dataset.nside,cycNext(L,nget(b.dataset.ncat,b.dataset.nkey,b.dataset.nside)));renderNeuro();changed();return}
   if(b.dataset.region){REGION=b.dataset.region;renderTests();return}
   if(b.dataset.topen){const id=b.dataset.topen;if(OPEN.has(id))OPEN.delete(id);else OPEN.add(id);renderTests();return}
@@ -559,7 +570,7 @@ function fillForm(){
     if(f.t==='table') document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f);
     if(['radio','chips','eva'].includes(f.t)) syncButtons(f.k);
   }));
-  OPEN.clear(); REGION=null; renderArtic(); renderTests(); renderNeuro(); refresh();
+  OPEN.clear(); NOPEN.clear(); REGION=null; renderArtic(); renderTests(); renderNeuro(); refresh();
 }
 fillForm();
 window.addEventListener('resize',()=>form.querySelectorAll('textarea').forEach(autosize));
