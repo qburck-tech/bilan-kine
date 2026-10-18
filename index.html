@@ -89,6 +89,9 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .tcard .gap{width:8px}
 .cluster{flex-basis:100%;font-size:13.5px;line-height:1.35;padding:9px 11px;border-radius:9px;background:var(--bg);border:1px dashed var(--muted)}
 .cluster.hit{border:1px solid var(--warn);background:var(--warn-soft)}
+.abbrlist{margin:0 14px 14px;font-size:13px;color:var(--muted)}
+.abbrlist summary{cursor:pointer;font-weight:700;color:var(--accent);padding:4px 0}
+.abbrlist p{margin:6px 0 0;line-height:1.5}
 .lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
 .ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:0 0 2px}
 .npanel{border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
@@ -141,7 +144,7 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 
 /* ---------- Impression ---------- */
 @page{size:A4;margin:11mm}
-.rp{font-family:Helvetica,Arial,sans-serif;color:#111;line-height:1.3;width:188mm}
+.rp{font-family:Helvetica,Arial,sans-serif;color:#111;line-height:1.3;width:188mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .rp-head{display:flex;justify-content:space-between;gap:10mm;align-items:flex-start}
 .rp-cab{font-size:.92em;color:#444;white-space:pre-line}
 .rp-cab b{color:#111}
@@ -150,7 +153,7 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .rp-title span{color:#444}
 .rp-pat{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:1.12em;border-bottom:1.2pt solid #111;padding:2.5mm 0 1.2mm;margin:2mm 0 1mm}
 .rp-pat span{font-weight:400;font-size:.8em;color:#444}
-.rp h4{font-size:1.08em;letter-spacing:.04em;text-transform:uppercase;color:#2C6E5F;margin:2.6mm 0 1mm;padding-bottom:.6mm;border-bottom:.5pt solid #bbb;break-after:avoid;page-break-after:avoid}
+.rp h4{font-size:1.08em;letter-spacing:.04em;text-transform:uppercase;color:#2C6E5F;margin:2.6mm 0 1mm;padding-bottom:.6mm;border-bottom:.8pt solid #bbb;break-after:avoid;page-break-after:avoid}
 .rp p{margin:0 0 1mm;white-space:pre-wrap}
 .rp .sep{color:#888;padding:0 1.2mm}
 .rp .redf{color:#B4442C;font-weight:700}
@@ -193,6 +196,7 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
       <input type="text" id="nom" placeholder="Ajouté à l'impression, jamais enregistré" autocomplete="off" autocapitalize="words">
     </div>
     <label class="check" id="evoWrap"><input type="checkbox" id="evo" checked><span id="evoTxt">Ajouter l'évolution depuis le bilan initial</span></label>
+    <label class="check"><input type="checkbox" id="abbr" checked><span>Écrire les abréviations en toutes lettres (kiné → kinésithérapeute…)</span></label>
     <label class="check" id="saveWrap"><input type="checkbox" id="alsoSave" checked><span>Enregistrer aussi dans l'historique</span></label>
     <p class="hint">Dans la fenêtre d'impression : choisis ton imprimante, ou touche Partager pour enregistrer en PDF.</p>
     <div id="printMsg" class="msg" hidden></div>
@@ -294,7 +298,7 @@ const SECTIONS=[
   {k:'marche',l:'Marche / transferts / escaliers',pl:'Marche, transferts',t:'area'},
   {k:'equilibre',l:'Équilibre / proprioception',pl:'Équilibre',t:'area'},
   {k:'score',l:'Score fonctionnel (nom et résultat)',pl:'Score fonctionnel',t:'text',ph:'ex. EIFEL 12/24, DASH 35'}]},
- {id:'diagnostic',title:'Diagnostic kiné',fields:[
+ {id:'diagnostic',title:'Diagnostic kiné',ptitle:'Diagnostic kinésithérapique',fields:[
   {k:'deficiences',l:'Déficiences (structures et fonctions)',pl:'Déficiences',t:'area'},
   {k:'limitations',l:'Limitations d\'activité',t:'area'},
   {k:'restrictions',l:'Restrictions de participation (travail, loisirs, vie sociale)',pl:'Restrictions de participation',t:'area'},
@@ -310,8 +314,9 @@ const SECTIONS=[
  {id:'suivi',title:'Suivi',fields:[
   {k:'autonomie',l:'Exercices donnés à réaliser en autonomie',pl:'Exercices en autonomie',t:'area'},
   {k:'evolution',l:'Évolution (techniques efficaces, résultats obtenus)',pl:'Évolution',t:'area'}]},
- {id:'reglages',title:'En-tête du cabinet',pdf:false,fields:[
-  {k:'_entete',l:'Lignes imprimées en haut à gauche',t:'area',store:'header',ph:'Nom, n° ADELI, adresse du cabinet…'}]}
+ {id:'reglages',title:'Réglages',pdf:false,fields:[
+  {k:'_entete',l:'En-tête du cabinet (imprimé en haut à gauche)',t:'area',store:'header',ph:'Nom, n° ADELI, adresse du cabinet…'},
+  {k:'_abbr',l:'Mes abréviations (une par ligne : abr = mot complet)',t:'area',store:'abbr',ph:'ex. lomb = lombaire'}]}
 ];
 const FIELDS={}; SECTIONS.forEach(s=>s.fields.forEach(f=>{f.sec=s.id;FIELDS[f.k]=f}));
 
@@ -437,6 +442,64 @@ const NEURO={
  pyr:[['babinski','Babinski'],['hoffmann','Hoffmann (membre sup.)'],['clonus_r','Clonus rotulien'],['clonus_a','Clonus achilléen']],
  pyrStates:['','Positif','Négatif']
 };
+
+const AKEY='bdk-abbr-v1';
+/* [abréviation, forme complète, sensible à la casse] — uniquement des abréviations sans ambiguïté en contexte de bilan */
+const ABBR_DEFAULT=[
+ ['kiné','kinésithérapeute'],['kine','kinésithérapeute'],['kinés','kinésithérapeutes'],
+ ['restri','restriction'],['restris','restrictions'],['restric','restriction'],
+ ['mvt','mouvement'],['mvts','mouvements'],['ttt','traitement'],['ttts','traitements'],
+ ['atcd','antécédents'],['atcds','antécédents'],['pec','prise en charge'],
+ ['dl','douleur'],['dls','douleurs'],['doul','douleur'],['dlr','douleur'],
+ ['ampl','amplitude'],['ampli','amplitude'],['amplis','amplitudes'],
+ ['rééduc','rééducation'],['reeduc','rééducation'],['renfo','renforcement'],
+ ['étir','étirement'],['etir','étirement'],['proprio','proprioception'],
+ ['mobil','mobilisation'],['mobils','mobilisations'],['exo','exercice'],['exos','exercices'],
+ ['fct','fonction'],['fctnel','fonctionnel'],['neuro','neurologique'],['cryo','cryothérapie'],
+ ['abd','abduction'],['add','adduction'],['flex','flexion'],['rot','rotation'],
+ ['RE','rotation externe',1],['RI','rotation interne',1],['ROT','réflexes ostéotendineux',1],
+ ['MI','membre inférieur',1],['MS','membre supérieur',1],['MMII','membres inférieurs'],['MMSS','membres supérieurs'],
+ ['AVQ','activités de la vie quotidienne'],['AVJ','activités de la vie journalière'],
+ ['CI','contre-indication',1],['TA','tension artérielle',1],['FC','fréquence cardiaque',1],
+ ['PTG','prothèse totale de genou'],['PTH','prothèse totale de hanche'],['PTE',"prothèse totale d'épaule"],
+ ['fx','fracture'],['fract','fracture'],['rx','radiographie'],['radio','radiographie'],['radios','radiographies'],
+ ['infiltr','infiltration'],['chir','chirurgie'],['sd','syndrome'],['sdr','syndrome'],
+ ['trbl','trouble'],['trbls','troubles'],['trbles','troubles'],['dx','diagnostic'],['sx','symptômes'],
+ ['obj','objectif'],['objs','objectifs'],['ccl','conclusion'],
+ ['sem','semaine'],['sems','semaines'],['env','environ'],['rdv','rendez-vous'],['pds','poids'],
+ ['tjs','toujours'],['bcp','beaucoup'],['pdt','pendant'],['qd','quand'],['ac','avec'],['avt','avant'],['ds','dans'],['qq','quelques'],['qqch','quelque chose']
+];
+let ABBR_ON=true;
+function abbrMaps(){
+  const cs=new Map(),ci=new Map();
+  ABBR_DEFAULT.forEach(([k,v,c])=>{if(c)cs.set(k,v);else ci.set(k.toLowerCase(),v)});
+  String(ABBR_CUSTOM||'').split('\n').forEach(l=>{const m=l.match(/^\s*([^=:→]+?)\s*(?:=|:|→)\s*(.+?)\s*$/);if(m){ci.set(m[1].toLowerCase(),m[2]);cs.delete(m[1])}});
+  return {cs,ci};
+}
+function expandAbbr(text){
+  if(!text) return text;
+  const {cs,ci}=abbrMaps();
+  return String(text).replace(/(^|[^\p{L}\p{N}\-])([\p{L}\p{N}]+)(\.?)(?=$|[^\p{L}\p{N}\-])/gu,(m,pre,w,dot,off,full)=>{
+    let v=cs.get(w); if(v==null) v=ci.get(w.toLowerCase()); if(v==null) return m;
+    const start=off+pre.length, before=full.slice(0,start), after=full.slice(start+w.length+dot.length), lw=w.toLowerCase();
+    if((lw==='kiné'||lw==='kine')&&/(?:^|\s)(?:de|en|la|sa|ta|ma)\s+$|d['’]$/i.test(before)) v='kinésithérapie';
+    const allUp=w.length>1&&w===w.toUpperCase()&&w!==w.toLowerCase();
+    const capFirst=!allUp&&w[0]!==w[0].toLowerCase();
+    const nb=before.match(/(\d+(?:[.,]\d+)?)\s*$/); if(nb&&parseFloat(nb[1].replace(',','.'))>=2&&!/\s/.test(v)&&!/[sxz]$/.test(v)) v+='s';
+    if(/(^|[.!?]\s+|\n\s*)$/.test(before)||capFirst) v=v[0].toUpperCase()+v.slice(1);
+    const d=(dot&&(/^\s+[\p{Ll}\d]/u.test(after)||/^\s*[,;:)\]\/]/.test(after)))?'':dot;
+    return pre+v+d;
+  });
+}
+const X=t=>ABBR_ON?expandAbbr(t):t;
+function reglagesExtra(){
+  const list=ABBR_DEFAULT.map(([k,v])=>`${esc(k)} → ${esc(v)}`).join(' · ');
+  return `<p class="hint" style="padding:0 14px 6px">Enregistré sur cet iPhone uniquement, jamais en ligne.</p><details class="abbrlist"><summary>Abréviations développées à l'impression (${ABBR_DEFAULT.length})</summary><p>${list}</p><p>« kiné » devient « kinésithérapie » après « de », « en », « la ». Les sigles reconnus (LCA, IRM, EVA…), D / G et les adjectifs (ant, post, lat…) sont laissés tels quels, pour ne pas fausser l'accord : ajoute-les dans « Mes abréviations » si tu veux.</p></details>`;
+}
+/* Couleurs des titres dans le PDF */
+const SEC_COLORS={patient:'#2C6E5F',ordonnance:'#2F5D8A',anamnese:'#A0522D',examen:'#5B3F8F',diagnostic:'#B03A2E',objectifs:'#9A7B0A',traitement:'#3F51B5',suivi:'#4F6B2F'};
+const SUB_COLORS={articulaire:'#8A2F5B',neuro:'#6E7A12',tests:'#0E7C86'};
+const EVO_COLOR='#455A64';
 let REGION=null; const OPEN=new Set();
 
 /* ---------- Stockage ---------- */
@@ -445,13 +508,14 @@ function lsSet(k,v){try{localStorage.setItem(k,v);return true}catch(e){return fa
 let S={}; try{S=JSON.parse(lsGet(KEY,'{}'))||{}}catch(e){S={}}
 if(!S.date) S.date=today();
 let HEADER=lsGet(HKEY,DEFAULT_HEADER);
+let ABBR_CUSTOM=lsGet(AKEY,'');
 if(Array.isArray(S.articulaire)&&S.articulaire.length&&Array.isArray(S.articulaire[0])) S.articulaire=S.articulaire.map(r=>Object.assign(newArt(),{mvt:r[0]||'',pdeg:r[1]||'',adeg:r[2]||'',sain:r[3]||''}));
 function loadHist(){try{const h=JSON.parse(lsGet(HIST,'[]'));return Array.isArray(h)?h:[]}catch(e){return []}}
 function saveHist(h){return lsSet(HIST,JSON.stringify(h))}
 try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}catch(e){}
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const val=k=>k==='_entete'?HEADER:S[k];
+const val=k=>k==='_entete'?HEADER:k==='_abbr'?ABBR_CUSTOM:S[k];
 
 /* ---------- Formulaire ---------- */
 function fieldHTML(f){
@@ -494,7 +558,7 @@ function tbodyHTML(f){
 }
 
 const form=document.getElementById('form'), jump=document.getElementById('jump');
-form.innerHTML=SECTIONS.map(s=>`<section class="sec" id="s-${s.id}"><h2><span>${esc(s.title)}</span><span class="n" id="n-${s.id}"></span></h2><div class="grid">${s.fields.map(fieldHTML).join('')}</div>${s.id==='reglages'?'<p class="hint" style="padding:0 14px 14px">Enregistré sur cet iPhone uniquement, jamais en ligne. Conservé d\'un bilan à l\'autre.</p>':''}</section>`).join('');
+form.innerHTML=SECTIONS.map(s=>`<section class="sec" id="s-${s.id}"><h2><span>${esc(s.title)}</span><span class="n" id="n-${s.id}"></span></h2><div class="grid">${s.fields.map(fieldHTML).join('')}</div>${s.id==='reglages'?reglagesExtra():''}</section>`).join('');
 jump.innerHTML=SECTIONS.filter(s=>s.id!=='reglages').map(s=>`<a href="#s-${s.id}" data-jump="${s.id}">${esc(s.title)} <span class="n" id="j-${s.id}"></span></a>`).join('');
 jump.addEventListener('click',e=>{const a=e.target.closest('a[data-jump]');if(!a)return;e.preventDefault();document.getElementById('s-'+a.dataset.jump).scrollIntoView({block:'start'})});
 
@@ -594,12 +658,12 @@ function refresh(){
   sub.textContent=S._hid?`Bilan enregistré ${S.code||''} · modifs à réenregistrer`:'Données sur cet iPhone uniquement · nom demandé à l\'impression';
 }
 let saveT=null;
-function saveDraft(){clearTimeout(saveT);saveT=setTimeout(()=>{lsSet(KEY,JSON.stringify(S));lsSet(HKEY,HEADER)},300)}
+function saveDraft(){clearTimeout(saveT);saveT=setTimeout(()=>{lsSet(KEY,JSON.stringify(S));lsSet(HKEY,HEADER);lsSet(AKEY,ABBR_CUSTOM)},300)}
 function changed(){refresh();saveDraft()}
 
 form.addEventListener('input',e=>{
   const t=e.target;
-  if(t.dataset.k){ if(t.dataset.k==='_entete') HEADER=t.value; else S[t.dataset.k]=t.value; if(t.tagName==='TEXTAREA') autosize(t); changed(); }
+  if(t.dataset.k){ if(t.dataset.k==='_entete') HEADER=t.value; else if(t.dataset.k==='_abbr') ABBR_CUSTOM=t.value; else S[t.dataset.k]=t.value; if(t.tagName==='TEXTAREA') autosize(t); changed(); }
   else if(t.dataset.tk){ S[t.dataset.tk][+t.dataset.r][+t.dataset.c]=t.value; changed(); }
   else if(t.dataset.ain){ artRows()[+t.dataset.r][t.dataset.ain]=t.value; changed(); }
   else if(t.dataset.nin){ nSet('myo',t.dataset.nkey,t.dataset.nside,t.value); changed(); }
@@ -671,19 +735,19 @@ function blocksFor(s,d){
     const label=f.pl||f.l;
     if(f.t==='artic'){
       const rows=(d.articulaire||[]).filter(artFilled).map(a=>[(a.mvt||'')+(a.cote?' ('+a.cote+')':''),amp(a.pdeg,a.pq),amp(a.adeg,a.aq),deg(a.sain),[(a.qual||[]).join(', '),a.fin?'fin : '+a.fin.toLowerCase():''].filter(Boolean).join(' ; ')]);
-      if(rows.length){flush();out.push({kind:'table',label,cols:['Mouvement','Passif','Actif','Sain','Qualité / fin de course'],w:[25,18,18,9,30],rows})}
+      if(rows.length){flush();out.push({kind:'table',label,cols:['Mouvement','Passif','Actif','Sain','Qualité / fin de course'],w:[25,18,18,9,30],rows,color:SUB_COLORS.articulaire,abbrCols:[0]})}
       return;
     }
     if(f.t==='neuro'){
       const pick=(cat,list)=>list.filter(([k])=>nget(cat,k,'D')||nget(cat,k,'G')).map(([k,l])=>[l,nget(cat,k,'D'),nget(cat,k,'G')]);
       [['Réflexes',pick('reflexes',NEURO.reflexes)],['Sensibilité',pick('derm',NEURO.derm)],['Myotomes',pick('myo',NEURO.myo)],['Signes pyramidaux et clonus',pick('pyr',NEURO.pyr)]]
-        .forEach(([g,rows])=>{if(rows.length){flush();out.push({kind:'table',label:g,cols:['Élément','D','G'],w:[60,20,20],rows})}});
+        .forEach(([g,rows])=>{if(rows.length){flush();out.push({kind:'table',label:g,cols:['Élément','D','G'],w:[60,20,20],rows,color:SUB_COLORS.neuro,abbrCols:[]})}});
       return;
     }
     if(f.t==='tests'){
       const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',[s.pouls?'pouls radial : '+s.pouls:'',s.note||''].filter(Boolean).join(' · ')]});
-      if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows})}
-      CLUSTERS.forEach(c=>{const k=clusterState(c,d.tspec);if(k.done){flush();out.push({kind:'para',label:c.n,val:clusterTxt(c,k),red:k.hit})}});
+      if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows,color:SUB_COLORS.tests,abbrCols:[3]})}
+      CLUSTERS.forEach(c=>{const k=clusterState(c,d.tspec);if(k.done){flush();out.push({kind:'para',label:c.n,val:clusterTxt(c,k),red:k.hit,color:SUB_COLORS.tests,noAbbr:1})}});
       return;
     }
     if(f.t==='table'){
@@ -898,16 +962,18 @@ function reportHTML(nom,withEvo){
   h+=`<div class="rp-pat"><div>Patient : ${esc(nom)}</div>${S.code?`<span>Code ${esc(normCode(S.code))}</span>`:''}</div>`;
   SECTIONS.filter(s=>s.pdf!==false).forEach(s=>{
     const bl=blocksFor(s,S); if(!bl.length) return;
-    h+=`<h4>${esc(s.title)}</h4>`;
+    const sc=SEC_COLORS[s.id]||'#2C6E5F';
+    h+=`<h4 style="color:${sc};border-bottom-color:${sc}">${esc(s.ptitle||s.title)}</h4>`;
     bl.forEach(b=>{
-      if(b.kind==='inline') h+=`<p>${b.pairs.map(([l,v])=>`<b>${esc(l)} :</b> ${esc(v)}`).join('<span class="sep">·</span>')}</p>`;
-      else if(b.kind==='para') h+=`<p><b>${esc(b.label)} :</b> <span class="${b.red?'redf':''}">${esc(b.val)}</span></p>`;
-      else h+=`<div class="tl">${esc(b.label)}</div><table><colgroup>${b.w.map(w=>`<col style="width:${w}%">`).join('')}</colgroup><thead><tr>${b.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${b.rows.map(r=>`<tr>${b.cols.map((c,i)=>`<td>${esc(r[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      const c=b.color||sc;
+      if(b.kind==='inline') h+=`<p>${b.pairs.map(([l,v])=>`<b>${esc(l)} :</b> ${esc(X(v))}`).join('<span class="sep">·</span>')}</p>`;
+      else if(b.kind==='para') h+=`<p><b${b.color?` style="color:${b.color}"`:''}>${esc(b.label)} :</b> <span class="${b.red?'redf':''}">${esc(b.noAbbr?b.val:X(b.val))}</span></p>`;
+      else h+=`<div class="tl" style="color:${c}">${esc(b.label)}</div><table><colgroup>${b.w.map(w=>`<col style="width:${w}%">`).join('')}</colgroup><thead><tr>${b.cols.map(cc=>`<th>${esc(cc)}</th>`).join('')}</tr></thead><tbody>${b.rows.map(r=>`<tr>${b.cols.map((cc,i)=>`<td>${esc((!b.abbrCols||b.abbrCols.includes(i))?X(r[i]||''):(r[i]||''))}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
     });
   });
   if(withEvo&&prevForPrint){
     const rows=compareRows(prevForPrint.data||{},S);
-    if(rows.length) h+=`<h4>Évolution depuis le bilan du ${esc(fmtDate(prevForPrint.date))}</h4>`+cmpTableHTML(rows,true).replace(/class="trend (up|down|eq)?"/g,(m,c)=>c&&c!=='eq'?`class="${c}"`:'');
+    if(rows.length) h+=`<h4 style="color:${EVO_COLOR};border-bottom-color:${EVO_COLOR}">Évolution depuis le bilan du ${esc(fmtDate(prevForPrint.date))}</h4>`+cmpTableHTML(rows,true).replace(/class="trend (up|down|eq)?"/g,(m,c)=>c&&c!=='eq'?`class="${c}"`:'');
   }
   return h;
 }
@@ -928,6 +994,7 @@ function fitReport(nom,withEvo){
 document.getElementById('btnPrintGo').addEventListener('click',()=>{
   const nom=nomEl.value.trim();
   if(!saveWrap.hidden&&document.getElementById('alsoSave').checked) saveToHistory(true);
+  ABBR_ON=document.getElementById('abbr').checked;
   const r=fitReport(nom,!evoWrap.hidden&&document.getElementById('evo').checked);
   if(r.pages>2){printMsg.textContent=`Le bilan dépasse 2 pages même en petit (environ ${r.pages}). Il s'imprimera quand même ; raccourcis les champs longs pour tenir sur 2.`;printMsg.className='msg err';printMsg.hidden=false}
   printSheet.hidden=true;
