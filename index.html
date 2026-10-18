@@ -92,6 +92,9 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .abbrlist{margin:0 14px 14px;font-size:13px;color:var(--muted)}
 .abbrlist summary{cursor:pointer;font-weight:700;color:var(--accent);padding:4px 0}
 .abbrlist p{margin:6px 0 0;line-height:1.5}
+.imcscale{display:flex;flex-direction:column;font-size:11px;line-height:1.35;color:var(--muted);margin-top:-4px}
+.imcscale .on{color:var(--ink);font-weight:700}
+.imcscale em{font-style:normal;opacity:.8;margin-top:2px}
 .lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
 .ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:0 0 2px}
 .npanel{border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
@@ -529,7 +532,7 @@ function fieldHTML(f){
   } else if(f.t==='area'){
     inner=`<textarea id="${id}" data-k="${f.k}" rows="2" placeholder="${esc(f.ph||'')}">${esc(v||'')}</textarea>`;
   } else if(f.t==='calc'){
-    inner=`<output class="calc" id="${id}">–</output>`; useLabel=false;
+    inner=`<output class="calc" id="${id}">–</output>${f.k==='imc'?'<div class="imcscale" id="imc-scale"></div>':''}`; useLabel=false;
   } else if(f.t==='radio'||f.t==='chips'){
     useLabel=false;
     inner=`<div class="chips${f.red?' red':''}" role="group" aria-label="${esc(f.l)}">`+f.o.map(o=>`<button type="button" class="chip" data-k="${f.k}" data-v="${esc(o)}" aria-pressed="false">${esc(o)}</button>`).join('')+`</div>`;
@@ -644,6 +647,8 @@ function filled(f){
   return v!=null&&String(v).trim()!=='';
 }
 const num=x=>{if(x==null)return NaN;const m=String(x).replace(',','.').match(/-?\d+(\.\d+)?/);return m?parseFloat(m[0]):NaN};
+const IMC_SCALE=[[0,18.5,'< 18,5','Maigreur'],[18.5,25,'18,5 – 24,9','Normal'],[25,30,'25 – 29,9','Surpoids'],[30,35,'30 – 34,9','Obésité modérée'],[35,40,'35 – 39,9','Obésité sévère'],[40,Infinity,'≥ 40','Obésité morbide']];
+function imcCat(v){const x=parseFloat(String(v).replace(',','.'));const r=IMC_SCALE.find(([a,b])=>x>=a&&x<b);return r?r[3]:''}
 function imcOf(d){const p=num(d.poids),t=num(d.taille)/100;return (p>0&&t>0)?(p/(t*t)).toFixed(1).replace('.',','):''}
 function visible(f,d){d=d||S;return !f.if||d[f.if[0]]===f.if[1]}
 function refresh(){
@@ -653,7 +658,8 @@ function refresh(){
     const j=document.getElementById('j-'+s.id); if(j) j.textContent=n?n:'';
     s.fields.forEach(f=>{const w=form.querySelector(`[data-wrap="${f.k}"]`); if(w) w.hidden=!visible(f)});
   });
-  const o=document.getElementById('f-imc'); if(o) o.textContent=imcOf(S)||'–';
+  const iv=imcOf(S), o=document.getElementById('f-imc'); if(o) o.textContent=iv?iv+' · '+imcCat(iv):'–';
+  const sc=document.getElementById('imc-scale'); if(sc){const cat=iv?imcCat(iv):'';sc.innerHTML=IMC_SCALE.map(([a,b,r,l])=>`<span class="${l===cat?'on':''}">${r} : ${l}</span>`).join('')+'<em>Barème OMS, adulte</em>'}
   const sub=document.getElementById('topsub');
   sub.textContent=S._hid?`Bilan enregistré ${S.code||''} · modifs à réenregistrer`:'Données sur cet iPhone uniquement · nom demandé à l\'impression';
 }
@@ -723,7 +729,7 @@ function textOf(f,d){
     case 'num': return v&&String(v).trim()?String(v).trim()+(f.u?' '+f.u:''):'';
     case 'eva': return v!=null&&v!==''?v+'/10':'';
     case 'chips': return Array.isArray(v)?v.join(', '):'';
-    case 'calc': return imcOf(d);
+    case 'calc': {const v=imcOf(d);return v?v+' ('+imcCat(v).toLowerCase()+')':''}
     default: return v?String(v).trim():'';
   }
 }
