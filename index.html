@@ -95,6 +95,10 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .imcscale{display:flex;flex-direction:column;font-size:11px;line-height:1.35;color:var(--muted);margin-top:-4px}
 .imcscale .on{color:var(--ink);font-weight:700}
 .imcscale em{font-style:normal;opacity:.8;margin-top:2px}
+.vrow{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.vrow select{flex:1;min-width:0;font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:42px}
+.vitem{background:var(--accent-soft)!important;border-color:var(--accent)!important}
+.notechip{border-style:dashed}
 .lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
 .ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:0 0 2px}
 .npanel{border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
@@ -146,7 +150,10 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 @media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
 
 /* ---------- Impression ---------- */
-@page{size:A4;margin:11mm}
+@page{size:A4;margin:0}
+.pg{width:210mm;border-collapse:collapse}
+.pg>thead>tr>td,.pg>tfoot>tr>td{height:11mm;padding:0;border:0}
+.pg>tbody>tr>td{padding:0 11mm;border:0}
 .rp{font-family:Helvetica,Arial,sans-serif;color:#111;line-height:1.3;width:188mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .rp-head{display:flex;justify-content:space-between;gap:10mm;align-items:flex-start}
 .rp-cab{font-size:.92em;color:#444;white-space:pre-line}
@@ -292,6 +299,7 @@ const SECTIONS=[
   {k:'local_notes',l:'Précisions bilan local',pl:'Bilan local, précisions',t:'area'},
   {k:'perimetrie',l:'Périmétrie',t:'table',cols:['Repère','Atteint','Sain'],w:[.5,.25,.25]},
   {k:'articulaire',l:'Bilan articulaire (quantité et qualité)',pl:'Bilan articulaire',t:'artic'},
+  {k:'vert',l:'Dysfonctions vertébrales (FRS / ERS / NSR)',pl:'Dysfonctions vertébrales',t:'vert'},
   {k:'musculaire',l:'Bilan musculaire (force)',t:'table',cols:['Groupe musculaire / contraction','Cotation'],w:[.75,.25]},
   {k:'neuro',l:'Examen neurologique',pl:'Examen neurologique',t:'neuro'},
   {k:'sensibilite',l:'Autres remarques neurologiques',pl:'Remarques neuro',t:'area'},
@@ -470,7 +478,7 @@ const ABBR_DEFAULT=[
  ['trbl','trouble'],['trbls','troubles'],['trbles','troubles'],['dx','diagnostic'],['sx','symptômes'],
  ['obj','objectif'],['objs','objectifs'],['ccl','conclusion'],
  ['sem','semaine'],['sems','semaines'],['env','environ'],['rdv','rendez-vous'],['pds','poids'],
- ['tjs','toujours'],['bcp','beaucoup'],['pdt','pendant'],['qd','quand'],['ac','avec'],['avt','avant'],['ds','dans'],['qq','quelques'],['qqch','quelque chose']
+ ['ras','rien à signaler'],['tjs','toujours'],['bcp','beaucoup'],['pdt','pendant'],['qd','quand'],['ac','avec'],['avt','avant'],['ds','dans'],['qq','quelques'],['qqch','quelque chose']
 ];
 let ABBR_ON=true;
 function abbrMaps(){
@@ -485,6 +493,7 @@ function expandAbbr(text){
   return String(text).replace(/(^|[^\p{L}\p{N}\-])([\p{L}\p{N}]+)(\.?)(?=$|[^\p{L}\p{N}\-])/gu,(m,pre,w,dot,off,full)=>{
     let v=cs.get(w); if(v==null) v=ci.get(w.toLowerCase()); if(v==null) return m;
     const start=off+pre.length, before=full.slice(0,start), after=full.slice(start+w.length+dot.length), lw=w.toLowerCase();
+    if(lw==='ras'&&/(?:^|\s)(?:au|à|a)\s+$/i.test(before)) return m;
     if((lw==='kiné'||lw==='kine')&&/(?:^|\s)(?:de|en|la|sa|ta|ma)\s+$|d['’]$/i.test(before)) v='kinésithérapie';
     const allUp=w.length>1&&w===w.toUpperCase()&&w!==w.toLowerCase();
     const capFirst=!allUp&&w[0]!==w[0].toLowerCase();
@@ -542,6 +551,9 @@ function fieldHTML(f){
   } else if(f.t==='artic'){
     useLabel=false;
     inner=`<div id="artic-box"></div><button type="button" class="addrow" data-aadd="1">+ Ajouter un mouvement</button><datalist id="mvts">${MVTS.map(m=>`<option value="${esc(m)}">`).join('')}</datalist>`;
+  } else if(f.t==='vert'){
+    useLabel=false;
+    inner='<div id="vert-box"></div>';
   } else if(f.t==='neuro'){
     useLabel=false;
     inner='<div id="neuro-box"></div>';
@@ -601,7 +613,7 @@ function renderTests(){
       h+=`<div class="tcard"><p>${esc(t.d)}</p><div class="row2">${['G','D'].map(c=>`<button type="button" class="chip" data-tset="cote" data-t="${t.id}" data-v="${c}" aria-pressed="${s.cote===c}">${c}</button>`).join('')}<span class="gap"></span>${res.map(v=>`<button type="button" class="chip${resCls(v)==='pos'?' pos':''}" data-tset="res" data-t="${t.id}" data-v="${v}" aria-pressed="${s.res===v}">${v}</button>`).join('')}</div>${t.pouls?`<div class="row2"><span class="lbl2">Pouls radial</span>${['Présent','Diminué','Aboli'].map(v=>`<button type="button" class="chip${v!=='Présent'?' pos':''}" data-tset="pouls" data-t="${t.id}" data-v="${v}" aria-pressed="${s.pouls===v}">${v}</button>`).join('')}</div>`:''}<input type="text" id="tn-${t.id}" data-tnote="${t.id}" value="${esc(s.note||'')}" placeholder="${t.m?'Temps / mesure':'Précisions (angle, douleur…)'}" aria-label="Précisions ${esc(t.n)}"></div>`;
     }
     return h;
-  }).join('')+CLUSTERS.filter(c=>REGION==='Réalisés'?clusterState(c,S.tspec).done>0:c.r===REGION).map(c=>{const k=clusterState(c,S.tspec);return `<div class="cluster${k.hit?' hit':''}"><b>${esc(c.n)}</b><br>${esc(clusterTxt(c,k))}</div>`}).join('');
+  }).join('')+(REGION!=='Réalisés'?(()=>{const nt=(S.rnotes||{})[REGION]||'',open=RNOPEN.has(REGION),i=REGIONS.indexOf(REGION);return `<button type="button" class="chip notechip" data-rnote="${esc(REGION)}" aria-expanded="${open}" aria-pressed="${open}">Note${nt.trim()?'<span class="dot neg"></span>':''}</button>`+(open?`<div class="tcard"><textarea id="rn-${i}" data-rnotek="${esc(REGION)}" rows="3" placeholder="Note libre sur cette région (ex. L3 ERS G, sensation de blocage…)">${esc(nt)}</textarea></div>`:'')})():'')+CLUSTERS.filter(c=>REGION==='Réalisés'?clusterState(c,S.tspec).done>0:c.r===REGION).map(c=>{const k=clusterState(c,S.tspec);return `<div class="cluster${k.hit?' hit':''}"><b>${esc(c.n)}</b><br>${esc(clusterTxt(c,k))}</div>`}).join('');
 }
 
 
@@ -628,6 +640,22 @@ function renderNeuro(){
   box.innerHTML=h;
 }
 
+
+const VLEVELS=['C0','C1','C2','C3','C4','C5','C6','C7','T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12','L1','L2','L3','L4','L5','Sacrum'];
+const VSEL={type:'',side:'',lvl:'L1',to:''};
+const RNOPEN=new Set();
+const vertTxt=e=>`${e.lvl}${e.to?'-'+e.to:''} ${e.type} ${e.side}`;
+function renderVert(){
+  const box=document.getElementById('vert-box'); if(!box) return;
+  const opts=(sel,empty)=>(empty?'<option value="">—</option>':'')+VLEVELS.map(l=>`<option value="${l}" ${l===sel?'selected':''}>${l==='C0'?'C0 (occiput)':l}</option>`).join('');
+  const list=Array.isArray(S.vert)?S.vert:[];
+  box.innerHTML=`<p class="hint">FRS / ERS : un niveau. NSR : un groupe, de … à …</p>
+   <div class="vrow"><select id="v-lvl" aria-label="Niveau">${opts(VSEL.lvl)}</select><span>à</span><select id="v-to" aria-label="Jusqu'au niveau (groupe)">${opts(VSEL.to,1)}</select></div>
+   <div class="chips">${['FRS','ERS','NSR'].map(t=>`<button type="button" class="chip" data-vtype="${t}" aria-pressed="${VSEL.type===t}">${t}</button>`).join('')}<span class="gap" style="width:10px"></span>${['D','G'].map(t=>`<button type="button" class="chip" data-vside="${t}" aria-pressed="${VSEL.side===t}">${t}</button>`).join('')}</div>
+   <button type="button" class="addrow" data-vadd="1">+ Ajouter la dysfonction</button>
+   ${list.length?`<div class="chips" style="margin-top:10px">${list.map((e,i)=>`<button type="button" class="chip vitem" data-vdel="${i}" aria-label="Supprimer ${vertTxt(e)}">${esc(vertTxt(e))} <span aria-hidden="true">×</span></button>`).join('')}</div>`:''}`;
+}
+
 function syncButtons(k){
   const f=FIELDS[k], v=S[k];
   form.querySelectorAll(`button[data-k="${k}"]`).forEach(b=>{
@@ -641,8 +669,9 @@ function filled(f){
   const v=S[f.k];
   if(f.t==='table') return Array.isArray(v)&&v.some(r=>r.some(c=>c&&String(c).trim()));
   if(f.t==='artic') return Array.isArray(v)&&v.some(artFilled);
-  if(f.t==='tests') return !!v&&Object.keys(v).some(tDone);
+  if(f.t==='tests') return (!!v&&Object.keys(v).some(tDone))||Object.values(S.rnotes||{}).some(x=>x&&String(x).trim());
   if(f.t==='neuro') return neuroFilled(v);
+  if(f.t==='vert') return Array.isArray(v)&&v.length>0;
   if(Array.isArray(v)) return v.length>0;
   return v!=null&&String(v).trim()!=='';
 }
@@ -672,11 +701,21 @@ form.addEventListener('input',e=>{
   if(t.dataset.k){ if(t.dataset.k==='_entete') HEADER=t.value; else if(t.dataset.k==='_abbr') ABBR_CUSTOM=t.value; else S[t.dataset.k]=t.value; if(t.tagName==='TEXTAREA') autosize(t); changed(); }
   else if(t.dataset.tk){ S[t.dataset.tk][+t.dataset.r][+t.dataset.c]=t.value; changed(); }
   else if(t.dataset.ain){ artRows()[+t.dataset.r][t.dataset.ain]=t.value; changed(); }
+  else if(t.id==='v-lvl'){ VSEL.lvl=t.value; }
+  else if(t.id==='v-to'){ VSEL.to=t.value; }
+  else if(t.dataset.rnotek){ S.rnotes=S.rnotes||{}; S.rnotes[t.dataset.rnotek]=t.value; autosize(t); changed(); }
   else if(t.dataset.nin){ nSet('myo',t.dataset.nkey,t.dataset.nside,t.value); changed(); }
   else if(t.dataset.tnote){ S.tspec=S.tspec||{}; (S.tspec[t.dataset.tnote]=S.tspec[t.dataset.tnote]||{}).note=t.value; changed(); }
 });
 form.addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.vtype){VSEL.type=VSEL.type===b.dataset.vtype?'':b.dataset.vtype;renderVert();return}
+  if(b.dataset.vside){VSEL.side=VSEL.side===b.dataset.vside?'':b.dataset.vside;renderVert();return}
+  if(b.dataset.vadd){const lvl=document.getElementById('v-lvl').value,to=document.getElementById('v-to').value;
+    if(!VSEL.type||!VSEL.side){toast('Choisis le type (FRS, ERS, NSR) et le côté.');return}
+    S.vert=Array.isArray(S.vert)?S.vert:[];S.vert.push({lvl,to:to&&to!==lvl?to:'',type:VSEL.type,side:VSEL.side});VSEL.type='';VSEL.side='';VSEL.to='';renderVert();changed();return}
+  if(b.dataset.vdel!==undefined){S.vert.splice(+b.dataset.vdel,1);renderVert();changed();return}
+  if(b.dataset.rnote){const r=b.dataset.rnote;if(RNOPEN.has(r))RNOPEN.delete(r);else RNOPEN.add(r);renderTests();if(RNOPEN.has(r)){const t=document.getElementById('rn-'+REGIONS.indexOf(r));if(t){autosize(t);t.focus()}}return}
   if(b.dataset.nopen){const c=b.dataset.nopen;if(NOPEN.has(c))NOPEN.delete(c);else NOPEN.add(c);renderNeuro();return}
   if(b.dataset.ncat){const L={reflexes:NEURO.reflexStates,derm:NEURO.dermStates,pyr:NEURO.pyrStates}[b.dataset.ncat];nSet(b.dataset.ncat,b.dataset.nkey,b.dataset.nside,cycNext(L,nget(b.dataset.ncat,b.dataset.nkey,b.dataset.nside)));renderNeuro();changed();return}
   if(b.dataset.region){REGION=b.dataset.region;renderTests();return}
@@ -708,7 +747,7 @@ function fillForm(){
     if(f.t==='table') document.getElementById('tb-'+f.k).innerHTML=tbodyHTML(f);
     if(['radio','chips','eva'].includes(f.t)) syncButtons(f.k);
   }));
-  OPEN.clear(); NOPEN.clear(); REGION=null; renderArtic(); renderTests(); renderNeuro(); refresh();
+  OPEN.clear(); NOPEN.clear(); RNOPEN.clear(); VSEL.type='';VSEL.side=''; REGION=null; renderArtic(); renderVert(); renderTests(); renderNeuro(); refresh();
 }
 fillForm();
 window.addEventListener('resize',()=>form.querySelectorAll('textarea').forEach(autosize));
@@ -744,6 +783,10 @@ function blocksFor(s,d){
       if(rows.length){flush();out.push({kind:'table',label,cols:['Mouvement','Passif','Actif','Sain','Qualité / fin de course'],w:[25,18,18,9,30],rows,color:SUB_COLORS.articulaire,abbrCols:[0]})}
       return;
     }
+    if(f.t==='vert'){
+      const l=(d.vert||[]); if(l.length){flush();out.push({kind:'para',label,val:l.map(vertTxt).join(' · '),noAbbr:1,color:SUB_COLORS.articulaire})}
+      return;
+    }
     if(f.t==='neuro'){
       const pick=(cat,list)=>list.filter(([k])=>nget(cat,k,'D')||nget(cat,k,'G')).map(([k,l])=>[l,nget(cat,k,'D'),nget(cat,k,'G')]);
       [['Réflexes',pick('reflexes',NEURO.reflexes)],['Sensibilité',pick('derm',NEURO.derm)],['Myotomes',pick('myo',NEURO.myo)],['Signes pyramidaux et clonus',pick('pyr',NEURO.pyr)]]
@@ -754,6 +797,7 @@ function blocksFor(s,d){
       const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',[s.pouls?'pouls radial : '+s.pouls:'',s.note||''].filter(Boolean).join(' · ')]});
       if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows,color:SUB_COLORS.tests,abbrCols:[3]})}
       CLUSTERS.forEach(c=>{const k=clusterState(c,d.tspec);if(k.done){flush();out.push({kind:'para',label:c.n,val:clusterTxt(c,k),red:k.hit,color:SUB_COLORS.tests,noAbbr:1})}});
+      REGIONS.forEach(r=>{const nt=(d.rnotes||{})[r];if(nt&&String(nt).trim()){flush();out.push({kind:'para',label:'Note '+r.toLowerCase(),val:String(nt).trim(),color:SUB_COLORS.tests})}});
       return;
     }
     if(f.t==='table'){
@@ -830,6 +874,7 @@ function compareRows(A,B){ // A = avant, B = maintenant
     const tr=(bad(a.res)&&good(b.res))?'up':(good(a.res)&&bad(b.res))?'down':(a.res&&a.res===b.res)?'eq':'';
     add('Tests',t.n+(b.cote?' ('+b.cote+')':''),fa,fb,tr);
   });
+  add('Rachis','Dysfonctions vertébrales',(A.vert||[]).map(vertTxt).join(', '),(B.vert||[]).map(vertTxt).join(', '),'');
   add('Fonction','Score fonctionnel',A.score||'',B.score||'','');
   add('Fonction','Aide à la locomotion',A.aide||'',B.aide||'','');
   add('Patient','Poids',A.poids?A.poids+' kg':'',B.poids?B.poids+' kg':'','');
@@ -985,7 +1030,7 @@ function reportHTML(nom,withEvo){
 }
 const PAGE_H_PX=(297-22)*96/25.4;
 function fitReport(nom,withEvo){
-  printEl.innerHTML=`<div class="rp" id="rp">${reportHTML(nom,withEvo)}</div>`;
+  printEl.innerHTML=`<table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td><div class="rp" id="rp">${reportHTML(nom,withEvo)}</div></td></tr></tbody></table>`;
   const rp=document.getElementById('rp');
   printEl.style.cssText='display:block;position:absolute;left:-10000px;top:0;visibility:hidden';
   let used=10;
