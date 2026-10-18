@@ -87,6 +87,8 @@ output.calc{font-variant-numeric:tabular-nums;padding:10px 0;font-weight:700}
 .tcard .chip{background:var(--surface);padding:6px 12px;min-height:34px;font-size:14px}
 .tcard .chip.pos[aria-pressed="true"]{background:var(--warn);border-color:var(--warn);color:#fff}
 .tcard .gap{width:8px}
+.cluster{flex-basis:100%;font-size:13.5px;line-height:1.35;padding:9px 11px;border-radius:9px;background:var(--bg);border:1px dashed var(--muted)}
+.cluster.hit{border:1px solid var(--warn);background:var(--warn-soft)}
 .lbl2{font-size:12.5px;font-weight:700;color:var(--muted)}
 .ntitle{font-family:var(--f-head);font-weight:700;font-size:15px;margin:0 0 2px}
 .npanel{border:1px solid var(--accent);border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--surface)}
@@ -317,46 +319,112 @@ const MVTS=['Épaule flexion','Épaule extension','Épaule abduction','Épaule r
 const QTY=['Complète','Légère','Modérée','Sévère','Nulle'];
 const QUAL=['Fluide','Douloureux','Arc douloureux','Compensations','Raideur','Crépitations','Appréhension'];
 const FIN=['Normale','Ferme','Dure','Molle','Vide (douleur)'];
-const REGIONS=['Lombaire / bassin','Cervical','Épaule','Défilé thoraco-brachial','Hanche','Genou','Cheville','Fonctionnel'];
+const REGIONS=['Cervical','Épaule','Défilé thoraco-brachial','Coude','Poignet / main','Lombaire / bassin','Hanche','Genou','Cheville / pied','Fonctionnel'];
 const TESTS=[
+ {r:'Cervical',id:'spurling',n:'Spurling',d:"Extension, inclinaison et rotation de la tête vers le côté atteint, puis compression axiale douce. Positif si douleur radiculaire dans le membre supérieur. Item du cluster de Wainner."},
+ {r:'Cervical',id:'distraction',n:'Distraction cervicale',d:"Décubitus dorsal, traction axiale douce de la tête. Positif si les symptômes radiculaires diminuent. Item du cluster de Wainner."},
+ {r:'Cervical',id:'ultt1',n:'ULNT1 (médian)',d:"Abaissement de l'épaule, abduction 90-110°, rotation externe, supination, extension du poignet et des doigts, puis extension du coude. Positif si les symptômes sont reproduits et modifiés par l'inclinaison cervicale. Item du cluster de Wainner."},
+ {r:'Cervical',id:'rot60',n:'Rotation < 60°',d:"Rotation cervicale active vers le côté atteint, mesurée au goniomètre ou à l'inclinomètre. Positif si elle est inférieure à 60°. Item du cluster de Wainner."},
+ {r:'Cervical',id:'ulnt2b',n:'ULNT2b (radial)',d:"Décubitus dorsal. Abaissement du moignon de l'épaule, coude en extension, rotation interne de tout le bras (avant-bras en pronation), poignet, doigts et pouce en flexion, puis légère abduction de l'épaule. Positif si les symptômes sont reproduits sur le territoire du nerf radial et modifiés par l'inclinaison cervicale."},
+ {r:'Cervical',id:'ulnt3',n:'ULNT3 (cubital)',d:"Décubitus dorsal. Poignet et doigts en extension, avant-bras en pronation, coude en flexion complète, abaissement du moignon de l'épaule, rotation externe puis abduction de l'épaule (la main vient vers l'oreille). Positif si les symptômes sont reproduits sur le territoire du nerf cubital (bord ulnaire, 4e et 5e doigts)."},
+ {r:'Cervical',id:'frt',n:'Flexion-rotation (C1-C2)',d:"Décubitus dorsal, rachis cervical en flexion passive maximale, puis rotation passive de chaque côté. Positif si la rotation est inférieure à 32° ou inférieure d'au moins 10° au côté opposé : dysfonction C1-C2, céphalée cervicogénique."},
+ {r:'Cervical',id:'ccft',n:'Flexion cranio-cervicale',m:1,d:"Décubitus dorsal, coussin de biofeedback sous la nuque gonflé à 20 mmHg. Petits hochements de tête par paliers de 2 mmHg (22 à 30), 10 s chacun. Noter le dernier palier tenu sans compensation (muscles superficiels, extension). Anormal en dessous de 26 mmHg."},
+ {r:'Épaule',id:'arc',n:'Arc douloureux',d:"Élévation active dans le plan de l'omoplate. Positif si douleur entre 60° et 120°, qui disparaît au-delà. Item des clusters de Park."},
+ {r:'Épaule',id:'hawkins',n:'Hawkins-Kennedy',d:"Flexion d'épaule à 90°, coude à 90°, rotation interne passive forcée. Positif si douleur. Item du cluster de Park (conflit)."},
+ {r:'Épaule',id:'infra',n:'Infra-épineux (RE résistée)',d:"Coude au corps fléchi à 90°, rotation externe contre résistance. Positif si faiblesse, avec ou sans douleur. Item des clusters de Park."},
+ {r:'Épaule',id:'droparm',n:'Drop arm',d:"L'examinateur amène le bras à 90° d'abduction puis demande de le redescendre lentement. Positif si le bras chute ou si la descente n'est pas contrôlée. Item du cluster de Park (rupture)."},
+ {r:'Épaule',id:'erlag',n:'Lag sign en RE',d:"Coude à 90°, légère abduction, l'examinateur amène l'épaule en rotation externe quasi maximale puis lâche le poignet. Positif si le bras revient en rotation interne : rupture du supra- et/ou de l'infra-épineux."},
+ {r:'Épaule',id:'jobe',n:'Jobe',d:"Bras à 90° d'abduction dans le plan de l'omoplate, pouces vers le bas, résistance vers le bas. Douleur ou faiblesse : supra-épineux."},
+ {r:'Épaule',id:'belly',n:'Belly press',d:"Main à plat sur le ventre, pousser contre l'abdomen en gardant le coude en avant. Positif si le coude recule ou si le poignet fléchit : subscapulaire."},
+ {r:'Épaule',id:'bearhug',n:'Bear hug',d:"Main du côté testé à plat sur l'épaule opposée, coude en avant. Le patient résiste à une tentative de décoller la main. Positif si la main se décolle : subscapulaire (partie haute)."},
+ {r:'Épaule',id:'apprehension',n:'Appréhension',d:"Abduction 90°, coude 90°, rotation externe progressive. Positif si appréhension (pas seulement douleur) : instabilité antérieure."},
+ {r:'Épaule',id:'relocation',n:'Relocation / surprise',d:"Suite de l'appréhension en décubitus : une poussée postérieure sur la tête humérale soulage l'appréhension (relocation), son relâchement brutal la fait réapparaître (surprise). Positif si c'est le cas : instabilité antérieure."},
+ {r:'Épaule',id:'obrien',n:"O'Brien",d:"Bras à 90° de flexion, 10° d'adduction, pouce vers le bas, résistance vers le bas ; puis même test paume vers le haut. Douleur profonde au 1er temps, diminuée au 2e : lésion SLAP. Douleur sur l'acromio-claviculaire : articulation AC."},
+ {r:'Épaule',id:'crossbody',n:'Cross-body (AC)',d:"Bras à 90° de flexion, adduction horizontale passive vers l'épaule opposée. Positif si douleur localisée à l'articulation acromio-claviculaire."},
+ {r:'Épaule',id:'palmup',n:'Palm-up (Speed)',d:"Bras tendu en flexion à 90°, paume vers le haut, résistance vers le bas. Douleur dans la gouttière bicipitale : long chef du biceps."},
+ {r:'Épaule',id:'neer',n:'Neer',h:1,d:"Omoplate stabilisée, élévation passive du bras en rotation interne. Positif si douleur antéro-supérieure. Test retiré de la liste : redondant avec Hawkins-Kennedy et peu spécifique."},
+ {r:'Épaule',id:'patte',n:'Patte',h:1,d:"Bras à 90° d'abduction, coude à 90°, rotation externe contre résistance. Remplacé par le test de l'infra-épineux coude au corps et le lag sign en RE."},
+ {r:'Défilé thoraco-brachial',id:'adson',n:'Adson',pouls:1,d:"Assis, pouls radial palpé, bras légèrement en abduction et extension. Le patient tourne la tête vers le côté testé, met le cou en extension et bloque une inspiration profonde. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
+ {r:'Défilé thoraco-brachial',id:'eden',n:'Eden',pouls:1,d:"Assis, pouls radial palpé. Épaules tirées vers l'arrière et vers le bas, poitrine en avant. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits : compression costo-claviculaire."},
+ {r:'Défilé thoraco-brachial',id:'roos',n:'Roos (EAST)',d:"Abduction à 90°, coude à 90°, rotation externe. Ouvrir et fermer les mains pendant 3 minutes. Positif si la lourdeur, la douleur ou les fourmillements sont reproduits et obligent à arrêter."},
+ {r:'Défilé thoraco-brachial',id:'wright',n:'Wright (hyperabduction)',pouls:1,d:"Assis, pouls radial palpé. Bras amené en hyperabduction (vers 180°) avec rotation externe. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
+ {r:'Coude',id:'cozen',n:'Cozen',d:"Coude en extension, avant-bras en pronation, poing fermé, extension du poignet contre résistance. Positif si douleur à l'épicondyle latéral."},
+ {r:'Coude',id:'mill',n:'Mill',d:"Coude en extension, avant-bras en pronation, flexion passive du poignet. Positif si douleur à l'épicondyle latéral."},
+ {r:'Coude',id:'pfgs',n:'Préhension sans douleur',m:1,d:"Dynamomètre, coude en extension : serrer jusqu'à l'apparition de la douleur. Noter la valeur des deux côtés et le ratio atteint / sain. Mesure de suivi de référence de l'épicondylalgie latérale."},
+ {r:'Coude',id:'medepi',n:'Épicondylalgie médiale',d:"Coude en extension, avant-bras en supination, flexion du poignet contre résistance. Positif si douleur à l'épicondyle médial."},
+ {r:'Coude',id:'mvst',n:'Moving valgus stress',d:"Épaule à 90° d'abduction et rotation externe maximale, valgus maintenu pendant l'extension rapide du coude depuis la flexion maximale. Positif si la douleur médiale est reproduite entre 120° et 70° : ligament collatéral ulnaire."},
+ {r:'Coude',id:'hook',n:'Hook test',d:"Coude fléchi à 90°, supination active. L'examinateur cherche à crocheter le tendon du biceps distal par le bord latéral. Positif si le tendon n'est pas accroché : rupture du biceps distal."},
+ {r:'Coude',id:'ulnflex',n:'Flexion du coude (ulnaire)',d:"Flexion maximale du coude, poignet en extension, maintenue 60 s, avec ou sans pression sur le nerf au sillon. Positif si fourmillements dans les 4e et 5e doigts."},
+ {r:'Coude',id:'elbext',n:'Extension (dépistage fracture)',d:"Après un traumatisme, extension complète des deux coudes. Positif si l'extension est incomplète : radiographie recommandée."},
+ {r:'Poignet / main',id:'phalen',n:'Phalen',d:"Flexion maximale des poignets, dos des mains l'un contre l'autre, 60 s. Positif si fourmillements dans le territoire du nerf médian."},
+ {r:'Poignet / main',id:'durkan',n:'Durkan',d:"Pression des pouces sur le canal carpien pendant 30 s. Positif si fourmillements dans le territoire du nerf médian."},
+ {r:'Poignet / main',id:'tinelc',n:'Tinel carpien',d:"Percussion du nerf médian au poignet. Positif si décharge dans le territoire du nerf médian."},
+ {r:'Poignet / main',id:'what',n:'WHAT test',d:"Poignet en flexion, pouce en abduction contre résistance. Positif si douleur au premier compartiment des extenseurs : ténosynovite de De Quervain. Plus spécifique que le Finkelstein."},
+ {r:'Poignet / main',id:'finkel',n:'Finkelstein',d:"Pouce dans le poing, inclinaison ulnaire du poignet. Positif si douleur au styloïde radial : De Quervain. Sensible mais peu spécifique."},
+ {r:'Poignet / main',id:'watson',n:'Watson',d:"Pouce de l'examinateur sur le tubercule du scaphoïde, passage de l'inclinaison ulnaire à radiale. Positif si ressaut douloureux ou douleur dorsale : instabilité scapho-lunaire."},
+ {r:'Poignet / main',id:'scaph',n:'Scaphoïde (fracture)',d:"Palpation de la tabatière anatomique et du tubercule du scaphoïde, compression axiale du pouce. Positif si douleur : suspicion de fracture, radiographie recommandée."},
+ {r:'Poignet / main',id:'fovea',n:'Signe de la fovéa',d:"Pression entre la styloïde ulnaire et le pisiforme, avant-bras en position neutre. Positif si douleur reproduite : lésion du TFCC ou du ligament ulno-triquétral."},
+ {r:'Poignet / main',id:'grind',n:'Grind test',d:"Compression axiale et rotation du 1er métacarpien sur le trapèze. Positif si douleur ou crépitation : rhizarthrose."},
  {r:'Lombaire / bassin',id:'lasegue',n:'Lasègue',d:"Décubitus dorsal, élévation passive de la jambe tendue. Positif si douleur radiculaire irradiant sous le genou entre 30° et 70°."},
  {r:'Lombaire / bassin',id:'lasegue_x',n:'Lasègue croisé',d:"Même manœuvre sur la jambe saine. Positif si la douleur est reproduite du côté atteint. Très spécifique d'une hernie discale."},
  {r:'Lombaire / bassin',id:'slump',n:'Slump test',d:"Assis, flexion du tronc puis de la nuque, extension du genou et flexion dorsale de cheville. Positif si les symptômes sont reproduits et diminuent quand la nuque repasse en extension."},
  {r:'Lombaire / bassin',id:'leri',n:'Léri (PKB)',d:"Décubitus ventral, flexion passive du genou. Positif si douleur à la face antérieure de la cuisse : souffrance L3-L4 (cruralgie)."},
- {r:'Lombaire / bassin',id:'faber',n:'FABER (Patrick)',d:"Décubitus dorsal, talon sur le genou opposé (flexion, abduction, rotation externe), pression sur le genou. Douleur inguinale : hanche. Douleur fessière postérieure : sacro-iliaque."},
- {r:'Cervical',id:'spurling',n:'Spurling',d:"Extension, inclinaison et rotation de la tête vers le côté atteint, puis compression axiale douce. Positif si douleur radiculaire dans le membre supérieur."},
- {r:'Cervical',id:'distraction',n:'Distraction cervicale',d:"Traction axiale douce de la tête. Positif si les symptômes radiculaires diminuent."},
- {r:'Cervical',id:'ultt1',n:'ULNT1 (médian)',d:"Abaissement de l'épaule, abduction 90-110°, rotation externe, supination, extension poignet et doigts, puis extension du coude. Positif si les symptômes sont reproduits et modifiés par l'inclinaison cervicale."},
- {r:'Cervical',id:'ulnt2b',n:'ULNT2b (radial)',d:"Décubitus dorsal. Abaissement du moignon de l'épaule, coude en extension, rotation interne de tout le bras (avant-bras en pronation), poignet, doigts et pouce en flexion, puis légère abduction de l'épaule. Positif si les symptômes sont reproduits sur le territoire du nerf radial et modifiés par l'inclinaison cervicale."},
- {r:'Cervical',id:'ulnt3',n:'ULNT3 (cubital)',d:"Décubitus dorsal. Poignet et doigts en extension, avant-bras en pronation, coude en flexion complète, abaissement du moignon de l'épaule, rotation externe puis abduction de l'épaule (la main vient vers l'oreille). Positif si les symptômes sont reproduits sur le territoire du nerf cubital (bord ulnaire, 4e et 5e doigts)."},
- {r:'Défilé thoraco-brachial',id:'adson',n:'Adson',pouls:1,d:"Assis, pouls radial palpé, bras légèrement en abduction et extension. Le patient tourne la tête vers le côté testé, met le cou en extension et bloque une inspiration profonde. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
- {r:'Défilé thoraco-brachial',id:'eden',n:'Eden',pouls:1,d:"Assis, pouls radial palpé. Épaules tirées vers l'arrière et vers le bas, poitrine en avant (position « garde-à-vous »). Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits : compression costo-claviculaire."},
- {r:'Défilé thoraco-brachial',id:'roos',n:'Roos (EAST)',d:"Abduction à 90°, coude à 90°, rotation externe. Ouvrir et fermer les mains pendant 3 minutes. Positif si la lourdeur, la douleur ou les fourmillements sont reproduits et deviennent insupportables."},
- {r:'Défilé thoraco-brachial',id:'wright',n:'Wright (hyperabduction)',pouls:1,d:"Assis, pouls radial palpé. Bras amené en hyperabduction (vers 180°) avec rotation externe. Positif si le pouls diminue ou disparaît, ou si les symptômes sont reproduits."},
- {r:'Épaule',id:'hawkins',n:'Hawkins-Kennedy',d:"Flexion d'épaule à 90°, coude à 90°, rotation interne passive forcée. Positif si douleur : conflit sous-acromial."},
- {r:'Épaule',id:'neer',n:'Neer',d:"Omoplate stabilisée, élévation passive du bras en rotation interne. Positif si douleur antéro-supérieure : conflit sous-acromial."},
- {r:'Épaule',id:'jobe',n:'Jobe',d:"Bras à 90° d'abduction dans le plan de l'omoplate, pouces vers le bas, résistance vers le bas. Douleur ou faiblesse : supra-épineux."},
- {r:'Épaule',id:'patte',n:'Patte',d:"Bras à 90° d'abduction, coude à 90°, rotation externe contre résistance. Douleur ou faiblesse : infra-épineux."},
- {r:'Épaule',id:'belly',n:'Belly press',d:"Main à plat sur le ventre, pousser contre l'abdomen en gardant le coude en avant. Positif si le coude recule ou si le poignet fléchit : subscapulaire."},
- {r:'Épaule',id:'palmup',n:'Palm-up (Speed)',d:"Bras tendu en flexion à 90°, paume vers le haut, résistance vers le bas. Douleur dans la gouttière bicipitale : long chef du biceps."},
- {r:'Épaule',id:'apprehension',n:'Appréhension',d:"Abduction 90°, coude 90°, rotation externe progressive. Positif si appréhension (pas seulement douleur) : instabilité antérieure. Soulagement à la poussée postérieure (relocation) : confirme."},
- {r:'Hanche',id:'fadir',n:'FADIR',d:"Décubitus dorsal, flexion de hanche à 90°, adduction et rotation interne. Douleur inguinale : conflit fémoro-acétabulaire ou atteinte du labrum."},
- {r:'Hanche',id:'thomas',n:'Thomas',d:"Décubitus dorsal en bout de table, flexion maximale de la hanche opposée. Positif si la cuisse testée décolle : raideur des fléchisseurs de hanche (si le genou s'étend : droit fémoral)."},
+ {r:'Lombaire / bassin',id:'central',n:'Centralisation',d:"Mouvements répétés (flexion, extension, glissement latéral), en charge ou couché. Positif si la douleur distale remonte vers le rachis : bon pronostic, préférence directionnelle. Préciser la direction."},
+ {r:'Lombaire / bassin',id:'proneinst',n:'Instabilité en procubitus',d:"Tronc à plat sur la table, pieds au sol : pression postéro-antérieure sur l'étage douloureux, puis même pression pieds décollés. Positif si la douleur du 1er temps disparaît au 2e : oriente vers un travail de stabilisation."},
+ {r:'Lombaire / bassin',id:'sij_dist',n:'Distraction (SI)',d:"Décubitus dorsal, pression postéro-latérale bilatérale sur les épines iliaques antéro-supérieures. Positif si la douleur sacro-iliaque habituelle est reproduite. Item du cluster de Laslett."},
+ {r:'Lombaire / bassin',id:'sij_thigh',n:'Thigh thrust (SI)',d:"Décubitus dorsal, hanche à 90°, poussée axiale le long du fémur vers la table, main sous le sacrum. Positif si la douleur sacro-iliaque est reproduite. Item du cluster de Laslett, le plus sensible."},
+ {r:'Lombaire / bassin',id:'sij_comp',n:'Compression (SI)',d:"Décubitus latéral, côté testé en haut, pression verticale sur la crête iliaque. Positif si la douleur sacro-iliaque est reproduite. Item du cluster de Laslett."},
+ {r:'Lombaire / bassin',id:'sij_sacral',n:'Sacral thrust (SI)',d:"Décubitus ventral, poussée postéro-antérieure au centre du sacrum. Positif si la douleur sacro-iliaque est reproduite. Item du cluster de Laslett."},
+ {r:'Lombaire / bassin',id:'sij_gaenslen',n:'Gaenslen (SI)',d:"Décubitus dorsal en bord de table, une hanche en flexion maximale, l'autre jambe descend en extension hors de la table, surpression. Positif si la douleur sacro-iliaque est reproduite. Item du cluster de Laslett."},
+ {r:'Hanche',id:'fadir',n:'FADIR',d:"Décubitus dorsal, flexion de hanche à 90°, adduction et rotation interne. Douleur inguinale : conflit fémoro-acétabulaire ou atteinte du labrum. Très sensible, peu spécifique : utile surtout s'il est négatif."},
+ {r:'Hanche',id:'faber',n:'FABER (Patrick)',d:"Décubitus dorsal, talon sur le genou opposé (flexion, abduction, rotation externe), pression sur le genou. Douleur inguinale : origine intra-articulaire. Douleur latérale : tendinopathie glutéale. Douleur postérieure : sacro-iliaque."},
+ {r:'Hanche',id:'logroll',n:'Log roll',d:"Décubitus dorsal, jambe tendue, rotations passives du membre inférieur. Positif si douleur inguinale : atteinte intra-articulaire."},
+ {r:'Hanche',id:'scour',n:'Scour test',d:"Hanche fléchie à 90° en adduction, compression axiale le long du fémur avec mouvements circulaires. Positif si douleur inguinale ou latérale. Item du cluster de Sutlive."},
+ {r:'Hanche',id:'sut_squat',n:'Squat douloureux',d:"Le squat aggrave la douleur de hanche. Item du cluster de Sutlive."},
+ {r:'Hanche',id:'sut_flex',n:'Flexion active douloureuse',d:"La flexion active de hanche reproduit une douleur latérale. Item du cluster de Sutlive."},
+ {r:'Hanche',id:'sut_ext',n:'Extension active douloureuse',d:"L'extension active de hanche reproduit la douleur. Item du cluster de Sutlive."},
+ {r:'Hanche',id:'sut_ri',n:'Rotation interne ≤ 25°',d:"Rotation interne passive de hanche (décubitus ventral, genou à 90°) inférieure ou égale à 25°. Item du cluster de Sutlive."},
+ {r:'Hanche',id:'slst30',n:'Appui unipodal 30 s',d:"Appui sur le côté testé 30 s, une main contre un mur pour l'équilibre. Positif si la douleur latérale de hanche est reproduite : test le plus fiable de la tendinopathie glutéale."},
  {r:'Hanche',id:'trendelenburg',n:'Trendelenburg',d:"Appui unipodal 30 s. Positif si le bassin chute du côté non portant : faiblesse du moyen fessier du côté en appui."},
- {r:'Genou',id:'lachman',n:'Lachman',d:"Genou fléchi à 20-30°, translation antérieure du tibia. Positif si translation augmentée sans arrêt dur : LCA."},
- {r:'Genou',id:'tiroirs',n:'Tiroirs ant. / post.',d:"Genou fléchi à 90°, pied fixé, translation antérieure puis postérieure du tibia. Antérieur : LCA. Postérieur : LCP. Préciser lequel."},
+ {r:'Hanche',id:'thomas',n:'Thomas (modifié)',d:"Assis en bout de table, se coucher en tenant la hanche opposée en flexion maximale. Positif si la cuisse testée reste au-dessus de l'horizontale : raideur des fléchisseurs de hanche (si le genou ne fléchit pas à 80-90° : droit fémoral)."},
+ {r:'Genou',id:'lachman',n:'Lachman',d:"Genou fléchi à 20-30°, translation antérieure du tibia. Positif si translation augmentée sans arrêt dur : LCA. Test de référence."},
+ {r:'Genou',id:'lever',n:'Lever sign',d:"Décubitus dorsal, poing sous le tiers proximal du mollet, appui vers le bas sur le quadriceps distal. Positif si le talon ne se soulève pas : rupture du LCA. Utile si le patient ne se relâche pas."},
+ {r:'Genou',id:'pivot',n:'Pivot shift',d:"Genou en extension, rotation interne du tibia et valgus, puis flexion progressive. Positif si ressaut de réduction vers 20-30° : rupture du LCA. Très spécifique, souvent impossible sans relâchement complet."},
+ {r:'Genou',id:'tiroirs',n:'Tiroirs ant. / post.',d:"Genou fléchi à 90°, pied fixé, translation antérieure puis postérieure du tibia. Le tiroir postérieur est le test de référence du LCP. Préciser lequel."},
+ {r:'Genou',id:'sag',n:'Avalement de la TTA',d:"Hanches et genoux à 90°, jambes soutenues par les talons. Positif si la tubérosité tibiale s'affaisse par rapport au côté sain : rupture du LCP."},
  {r:'Genou',id:'valgus',n:'Valgus / varus forcé',d:"Contrainte en valgus puis en varus, à 0° et à 30° de flexion. Douleur ou laxité : LLI (valgus) ou LLE (varus). Laxité dès 0° : lésion associée du pivot central."},
- {r:'Genou',id:'mcmurray',n:'McMurray',d:"Flexion maximale du genou, rotation du tibia puis extension progressive. Douleur ou claquement sur l'interligne : lésion méniscale."},
+ {r:'Genou',id:'jlt',n:"Douleur à l'interligne",d:"Palpation des interlignes médial et latéral, genou fléchi à 90°. Positif si douleur localisée : lésion méniscale possible."},
  {r:'Genou',id:'thessaly',n:'Thessaly',d:"Appui unipodal, genou fléchi à 20°, rotations du corps à 3 reprises. Douleur ou blocage sur l'interligne : lésion méniscale."},
- {r:'Genou',id:'choc',n:'Choc rotulien',d:"Genou en extension, chasser le liquide du cul-de-sac sous-quadricipital puis appuyer sur la rotule. Positif si la rotule rebondit : épanchement."},
- {r:'Cheville',id:'tiroir_chev',n:'Tiroir antérieur',d:"Légère flexion plantaire, translation antérieure du talus. Laxité ou douleur : ligament talo-fibulaire antérieur."},
- {r:'Cheville',id:'tilt',n:'Talar tilt',d:"Varus forcé du calcanéum en position neutre. Laxité ou douleur : ligament calcanéo-fibulaire."},
- {r:'Cheville',id:'squeeze',n:'Squeeze test',d:"Compression du tibia et de la fibula à mi-jambe. Douleur distale : lésion de la syndesmose."},
- {r:'Cheville',id:'thompson',n:'Thompson',d:"Décubitus ventral, pied hors de la table, compression du mollet. Absence de flexion plantaire : rupture du tendon calcanéen."},
+ {r:'Genou',id:'mcmurray',n:'McMurray',d:"Flexion maximale du genou, rotation du tibia puis extension progressive. Douleur ou claquement sur l'interligne : lésion méniscale. Spécifique, peu sensible."},
+ {r:'Genou',id:'stroke',n:'Stroke test',d:"Genou en extension, chasser le liquide du compartiment médial vers le haut, puis effleurer le bord latéral vers le bas. Coter dans Précisions : 0, trace, 1+, 2+, 3+ (liquide impossible à chasser)."},
+ {r:'Genou',id:'fairbank',n:'Appréhension rotulienne',d:"Genou à 30° de flexion, poussée latérale de la rotule. Positif si appréhension ou contraction de défense : instabilité fémoro-patellaire."},
+ {r:'Genou',id:'stepdown',n:'Step-down',d:"Descente lente d'une marche ou squat unipodal. Positif si la douleur antérieure du genou est reproduite. Noter le contrôle du valgus dynamique."},
+ {r:'Genou',id:'ottawa_k',n:"Règle d'Ottawa (genou)",d:"Après un traumatisme, radiographie indiquée si au moins un critère : âge ≥ 55 ans, douleur isolée de la rotule, douleur de la tête de la fibula, flexion impossible à 90°, impossible de faire 4 pas en charge. Positif = radiographie indiquée."},
+ {r:'Genou',id:'choc',n:'Choc rotulien',h:1,d:"Remplacé par le stroke test, plus fiable pour coter l'épanchement."},
+ {r:'Cheville / pied',id:'ottawa_a',n:"Règle d'Ottawa (cheville)",d:"Après un traumatisme, radiographie indiquée si douleur malléolaire ou du médio-pied ET douleur à la palpation du bord postérieur ou de la pointe d'une malléole, de la base du 5e métatarsien ou du naviculaire, ou impossible de faire 4 pas en charge. Positif = radiographie indiquée."},
+ {r:'Cheville / pied',id:'tiroir_chev',n:'Tiroir antérieur',d:"Légère flexion plantaire, translation antérieure du talus. Laxité ou douleur : ligament talo-fibulaire antérieur. Plus fiable 4 à 5 jours après l'entorse."},
+ {r:'Cheville / pied',id:'tilt',n:'Talar tilt',d:"Varus forcé du calcanéum en position neutre. Laxité ou douleur : ligament calcanéo-fibulaire."},
+ {r:'Cheville / pied',id:'squeeze',n:'Squeeze test',d:"Compression du tibia et de la fibula à mi-jambe. Douleur distale : lésion de la syndesmose."},
+ {r:'Cheville / pied',id:'kleiger',n:'Rotation externe (Kleiger)',d:"Genou à 90°, cheville en position neutre, rotation externe du pied. Positif si douleur antéro-latérale haute : lésion de la syndesmose."},
+ {r:'Cheville / pied',id:'thompson',n:'Thompson',d:"Décubitus ventral, pied hors de la table, compression du mollet. Absence de flexion plantaire : rupture du tendon calcanéen."},
+ {r:'Cheville / pied',id:'rlh',n:'Royal London Hospital',d:"Palpation du point le plus douloureux du tendon calcanéen, cheville neutre, puis en flexion dorsale active. Positif si la douleur diminue nettement en flexion dorsale : tendinopathie corporéale."},
+ {r:'Cheville / pied',id:'windlass',n:'Windlass',d:"En charge, extension passive du gros orteil. Positif si la douleur plantaire au talon est reproduite : fasciopathie plantaire."},
+ {r:'Cheville / pied',id:'wblt',n:'Fente en charge (WBLT)',m:1,d:"Genou poussé vers le mur, talon au sol. Noter la distance orteil-mur de chaque côté. Anormal si moins de 9 à 10 cm ou asymétrie de plus de 2 cm."},
+ {r:'Cheville / pied',id:'silf',n:'Silfverskiöld',d:"Flexion dorsale passive genou tendu puis genou fléchi. Positif si la flexion dorsale augmente nettement genou fléchi : raideur du gastrocnémien."},
  {r:'Fonctionnel',id:'unipodal',n:'Appui unipodal',m:1,d:"Tenir sur un pied, yeux ouverts puis fermés. Noter le temps. Moins de 5 s chez la personne âgée : risque de chute."},
  {r:'Fonctionnel',id:'tug',n:'Timed Up and Go',m:1,d:"Se lever d'une chaise, marcher 3 m, faire demi-tour, revenir s'asseoir. Noter le temps. Plus de 13,5 s : risque de chute augmenté."},
  {r:'Fonctionnel',id:'sts5',n:'Assis-debout ×5',m:1,d:"Se lever et s'asseoir 5 fois le plus vite possible, bras croisés. Noter le temps. Plus de 15 s chez la personne âgée : risque de chute."}
 ];
+const CLUSTERS=[
+ {r:'Cervical',n:'Cluster de Wainner (radiculopathie cervicale)',ids:['spurling','distraction','ultt1','rot60'],seuil:3,ok:"3 positifs sur 4 : radiculopathie probable ; 4 sur 4 : très probable."},
+ {r:'Épaule',n:'Cluster de Park (conflit sous-acromial)',ids:['hawkins','arc','infra'],seuil:3,ok:"3 positifs sur 3 : en faveur d'un conflit sous-acromial."},
+ {r:'Épaule',n:'Cluster de Park (rupture transfixiante)',ids:['droparm','arc','infra'],seuil:3,ok:"3 positifs sur 3 : en faveur d'une rupture transfixiante de la coiffe."},
+ {r:'Lombaire / bassin',n:'Cluster de Laslett (sacro-iliaque)',ids:['sij_dist','sij_thigh','sij_comp','sij_sacral','sij_gaenslen'],seuil:3,ok:"3 positifs ou plus sur 5 : en faveur d'une douleur d'origine sacro-iliaque."},
+ {r:'Hanche',n:'Cluster de Sutlive (coxarthrose)',ids:['sut_squat','sut_flex','scour','sut_ext','sut_ri'],seuil:4,ok:"4 positifs ou plus sur 5 : en faveur d'une coxarthrose."}
+];
+const isPos=v=>v==='Positif'||v==='Anormal';
+function clusterState(c,st){st=st||{};const done=c.ids.filter(id=>st[id]&&st[id].res).length,pos=c.ids.filter(id=>st[id]&&isPos(st[id].res)).length;return {done,pos,n:c.ids.length,hit:pos>=c.seuil}}
+function clusterTxt(c,k){return `${k.pos}/${k.n} positifs (${k.done} réalisé${k.done>1?'s':''}) : ${k.hit?c.ok:(k.done===k.n?'seuil non atteint.':'à compléter, seuil '+c.seuil+'.')}`}
 const TBYID={}; TESTS.forEach(t=>TBYID[t.id]=t);
 const newArt=()=>({mvt:'',cote:'',pq:'',pdeg:'',aq:'',adeg:'',sain:'',qual:[],fin:''});
 const artFilled=a=>!!(a&&(a.mvt||a.cote||a.pq||a.aq||a.pdeg||a.adeg||a.sain||(a.qual&&a.qual.length)||a.fin));
@@ -457,7 +525,7 @@ function renderTests(){
   const done=TESTS.filter(t=>tDone(t.id)).length;
   if(!REGION||(REGION==='Réalisés'&&!done)) REGION=REGIONS[0];
   reg.innerHTML=REGIONS.concat(done?['Réalisés']:[]).map(r=>`<button type="button" class="chip" data-region="${esc(r)}" aria-pressed="${r===REGION}">${esc(r)}${r==='Réalisés'?' ('+done+')':''}</button>`).join('');
-  const list=TESTS.filter(t=>REGION==='Réalisés'?tDone(t.id):t.r===REGION);
+  const list=TESTS.filter(t=>REGION==='Réalisés'?tDone(t.id):(t.r===REGION&&(!t.h||tDone(t.id))));
   box.innerHTML=list.map(t=>{
     const s=tState(t.id), open=OPEN.has(t.id);
     let h=`<button type="button" class="chip" data-topen="${t.id}" aria-expanded="${open}">${esc(t.n)}${s.res?`<span class="dot ${resCls(s.res)}"></span>`:''}</button>`;
@@ -466,7 +534,7 @@ function renderTests(){
       h+=`<div class="tcard"><p>${esc(t.d)}</p><div class="row2">${['G','D'].map(c=>`<button type="button" class="chip" data-tset="cote" data-t="${t.id}" data-v="${c}" aria-pressed="${s.cote===c}">${c}</button>`).join('')}<span class="gap"></span>${res.map(v=>`<button type="button" class="chip${resCls(v)==='pos'?' pos':''}" data-tset="res" data-t="${t.id}" data-v="${v}" aria-pressed="${s.res===v}">${v}</button>`).join('')}</div>${t.pouls?`<div class="row2"><span class="lbl2">Pouls radial</span>${['Présent','Diminué','Aboli'].map(v=>`<button type="button" class="chip${v!=='Présent'?' pos':''}" data-tset="pouls" data-t="${t.id}" data-v="${v}" aria-pressed="${s.pouls===v}">${v}</button>`).join('')}</div>`:''}<input type="text" id="tn-${t.id}" data-tnote="${t.id}" value="${esc(s.note||'')}" placeholder="${t.m?'Temps / mesure':'Précisions (angle, douleur…)'}" aria-label="Précisions ${esc(t.n)}"></div>`;
     }
     return h;
-  }).join('');
+  }).join('')+CLUSTERS.filter(c=>REGION==='Réalisés'?clusterState(c,S.tspec).done>0:c.r===REGION).map(c=>{const k=clusterState(c,S.tspec);return `<div class="cluster${k.hit?' hit':''}"><b>${esc(c.n)}</b><br>${esc(clusterTxt(c,k))}</div>`}).join('');
 }
 
 
@@ -615,6 +683,7 @@ function blocksFor(s,d){
     if(f.t==='tests'){
       const rows=TESTS.filter(t=>tDoneIn(d.tspec,t.id)).map(t=>{const s=d.tspec[t.id];return [t.n,s.cote||'',s.res||'',[s.pouls?'pouls radial : '+s.pouls:'',s.note||''].filter(Boolean).join(' · ')]});
       if(rows.length){flush();out.push({kind:'table',label,cols:['Test','Côté','Résultat','Précisions'],w:[28,9,16,47],rows})}
+      CLUSTERS.forEach(c=>{const k=clusterState(c,d.tspec);if(k.done){flush();out.push({kind:'para',label:c.n,val:clusterTxt(c,k),red:k.hit})}});
       return;
     }
     if(f.t==='table'){
